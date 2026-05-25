@@ -42,6 +42,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -90,8 +91,8 @@ fun FilesScreen(navController: NavHostController) {
     var deleteTargets by remember { mutableStateOf<List<String>?>(null) }
     var showCreateFolder by remember { mutableStateOf(false) }
 
-    // Pending move state (stored locally, not in savedStateHandle)
-    var pendingMoveIds by remember { mutableStateOf<List<String>?>(null) }
+    // Pending move state (must survive navigation)
+    var pendingMoveIds by rememberSaveable { mutableStateOf<List<String>?>(null) }
 
     var currentFolderName by remember { mutableStateOf("文件") }
 
