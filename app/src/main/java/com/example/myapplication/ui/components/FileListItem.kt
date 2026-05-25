@@ -19,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
@@ -37,7 +36,6 @@ fun FileListItem(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    var pressOffset by remember { mutableStateOf(IntOffset.Zero) }
 
     Box(modifier = modifier.fillMaxWidth()) {
         ListItem(
@@ -62,21 +60,15 @@ fun FileListItem(
                 .pointerInput(file.fileId) {
                     detectTapGestures(
                         onTap = { onClick() },
-                        onLongPress = { offset ->
-                            pressOffset = IntOffset(offset.x.toInt(), offset.y.toInt())
-                            showMenu = true
-                        }
+                        onLongPress = { showMenu = true }
                     )
                 }
         )
 
         if (showMenu) {
             Popup(
-                alignment = androidx.compose.ui.Alignment.TopStart,
-                offset = IntOffset(
-                    pressOffset.x.coerceIn(0, 300),
-                    pressOffset.y
-                ),
+                alignment = androidx.compose.ui.Alignment.TopEnd,
+                offset = IntOffset(-32, 64),
                 onDismissRequest = { showMenu = false },
                 properties = PopupProperties(focusable = true)
             ) {
@@ -84,9 +76,9 @@ fun FileListItem(
                     modifier = Modifier
                         .widthIn(max = 180.dp)
                         .background(
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape = MaterialTheme.shapes.medium
-                    )
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            shape = MaterialTheme.shapes.medium
+                        )
                 ) {
                     PopupMenuItem("重命名") { showMenu = false; onRename() }
                     PopupMenuItem("移动") { showMenu = false; onMove() }
