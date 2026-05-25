@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -80,7 +81,9 @@ fun FileListItem(
                 properties = PopupProperties(focusable = true)
             ) {
                 Column(
-                    modifier = Modifier.background(
+                    modifier = Modifier
+                        .widthIn(max = 180.dp)
+                        .background(
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         shape = MaterialTheme.shapes.medium
                     )
