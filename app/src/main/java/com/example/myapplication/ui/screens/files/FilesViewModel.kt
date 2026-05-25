@@ -62,6 +62,21 @@ class FilesViewModel(
         }
     }
 
+    fun createFolder(name: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val folder = FileEntity(
+                fileId = UUID.randomUUID().toString(),
+                name = name,
+                size = 0,
+                path = name,
+                type = "folder",
+                parentId = _currentParentId.value,
+                timestamp = System.currentTimeMillis()
+            )
+            fileRepository.insertFile(folder)
+        }
+    }
+
     fun moveFile(fileId: String, newParentId: String?) {
         viewModelScope.launch {
             fileRepository.moveFile(fileId, newParentId)

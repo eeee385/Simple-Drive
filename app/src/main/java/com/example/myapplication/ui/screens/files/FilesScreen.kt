@@ -10,8 +10,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -66,17 +67,14 @@ fun FilesScreen(navController: NavHostController) {
         uri?.let { viewModel.uploadFile(context, it) }
     }
 
-    // Selected file for context menu and dialogs
-    var selectedFile by remember { mutableStateOf<FileEntity?>(null) }
-    var showContextMenu by remember { mutableStateOf(false) }
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var showMoveDialog by remember { mutableStateOf(false) }
-    var showDeleteDialog by remember { mutableStateOf(false) }
+    // Dialog states (per-file dialogs)
+    var renameFile by remember { mutableStateOf<FileEntity?>(null) }
+    var moveFile by remember { mutableStateOf<FileEntity?>(null) }
+    var deleteFile by remember { mutableStateOf<FileEntity?>(null) }
+    var showCreateFolder by remember { mutableStateOf(false) }
 
-    // Folder name for title
     var currentFolderName by remember { mutableStateOf("文件") }
 
-    // Load folder name
     LaunchedEffect(currentParentId) {
         val parentId = currentParentId
         currentFolderName = if (parentId == null) "文件" else {
@@ -88,10 +86,11 @@ fun FilesScreen(navController: NavHostController) {
 
     // Preload folders for move dialog
     var moveFolders by remember { mutableStateOf<List<FileEntity>>(emptyList()) }
-    LaunchedEffect(showMoveDialog) {
-        if (showMoveDialog && selectedFile != null) {
+    LaunchedEffect(moveFile) {
+        val target = moveFile
+        if (target != null) {
             moveFolders = withContext(Dispatchers.IO) {
-                app.fileRepository.getAllFoldersExcept(selectedFile!!.fileId)
+                app.fileRepository.getAllFoldersExcept(target.fileId)
             }
         }
     }
@@ -105,6 +104,11 @@ fun FilesScreen(navController: NavHostController) {
                         IconButton(onClick = { viewModel.navigateBack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                         }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showCreateFolder = true }) {
+                        Icon(Icons.Filled.CreateNewFolder, contentDescription = "新建文件夹")
                     }
                 }
             )
@@ -125,9 +129,16 @@ fun FilesScreen(navController: NavHostController) {
                         FileListItem(
                             file = file,
                             onClick = { onFileClick(file, viewModel, navController, context) },
-                            onLongClick = {
-                                selectedFile = file
-                                showContextMenu = true
+                            onRename = { renameFile = file },
+                            onMove = { moveFile = file },
+                            onDelete = { deleteFile = file },
+                            onShare = {
+                                scope.launch {
+                                    val link = app.shareRepository.generateShareLink(file.fileId)
+                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("share_link", link))
+                                    snackbarHostState.showSnackbar("分享链接已复制到剪贴板")
+                                }
                             }
                         )
                     }
@@ -136,85 +147,50 @@ fun FilesScreen(navController: NavHostController) {
 
             if (isLoading) LoadingOverlay()
 
-            // Context menu
-            if (showContextMenu && selectedFile != null) {
-                FileContextMenu(
-                    expanded = true,
-                    onDismiss = {
-                        showContextMenu = false
-                        selectedFile = null
-                    },
-                    onRename = {
-                        showContextMenu = false
-                        showRenameDialog = true
-                    },
-                    onMove = {
-                        showContextMenu = false
-                        showMoveDialog = true
-                    },
-                    onDelete = {
-                        showContextMenu = false
-                        showDeleteDialog = true
-                    },
-                    onShare = {
-                        showContextMenu = false
-                        val fileId = selectedFile!!.fileId
-                        scope.launch {
-                            val link = app.shareRepository.generateShareLink(fileId)
-                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("share_link", link))
-                            snackbarHostState.showSnackbar("分享链接已复制到剪贴板")
-                        }
-                        selectedFile = null
-                    }
-                )
-            }
-
             // Rename dialog
-            if (showRenameDialog && selectedFile != null) {
+            renameFile?.let { file ->
                 RenameDialog(
-                    currentName = selectedFile!!.name,
+                    currentName = file.name,
                     onConfirm = { newName ->
-                        viewModel.renameFile(selectedFile!!.fileId, newName)
-                        showRenameDialog = false
-                        selectedFile = null
+                        viewModel.renameFile(file.fileId, newName)
+                        renameFile = null
                     },
-                    onDismiss = {
-                        showRenameDialog = false
-                        selectedFile = null
-                    }
+                    onDismiss = { renameFile = null }
                 )
             }
 
             // Move dialog
-            if (showMoveDialog && selectedFile != null) {
+            moveFile?.let { file ->
                 MoveFileDialog(
                     folders = moveFolders,
                     onConfirm = { newParentId ->
-                        viewModel.moveFile(selectedFile!!.fileId, newParentId)
-                        showMoveDialog = false
-                        selectedFile = null
+                        viewModel.moveFile(file.fileId, newParentId)
+                        moveFile = null
                     },
-                    onDismiss = {
-                        showMoveDialog = false
-                        selectedFile = null
-                    }
+                    onDismiss = { moveFile = null }
                 )
             }
 
             // Delete dialog
-            if (showDeleteDialog && selectedFile != null) {
+            deleteFile?.let { file ->
                 DeleteConfirmDialog(
-                    fileName = selectedFile!!.name,
+                    fileName = file.name,
                     onConfirm = {
-                        viewModel.deleteFile(selectedFile!!.fileId)
-                        showDeleteDialog = false
-                        selectedFile = null
+                        viewModel.deleteFile(file.fileId)
+                        deleteFile = null
                     },
-                    onDismiss = {
-                        showDeleteDialog = false
-                        selectedFile = null
-                    }
+                    onDismiss = { deleteFile = null }
+                )
+            }
+
+            // Create folder dialog
+            if (showCreateFolder) {
+                CreateFolderDialog(
+                    onConfirm = { folderName ->
+                        viewModel.createFolder(folderName)
+                        showCreateFolder = false
+                    },
+                    onDismiss = { showCreateFolder = false }
                 )
             }
         }
@@ -248,6 +224,6 @@ private fun onFileClick(
                 Toast.makeText(context, "没有可用的视频播放器", Toast.LENGTH_SHORT).show()
             }
         }
-        else -> { /* no action for other types */ }
+        else -> { /* no action */ }
     }
 }

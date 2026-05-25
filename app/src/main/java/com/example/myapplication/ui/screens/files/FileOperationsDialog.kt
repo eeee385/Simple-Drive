@@ -104,6 +104,34 @@ fun MoveFileDialog(
 }
 
 @Composable
+fun CreateFolderDialog(
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var folderName by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("新建文件夹") },
+        text = {
+            TextField(
+                value = folderName,
+                onValueChange = { folderName = it },
+                singleLine = true,
+                placeholder = { Text("请输入文件夹名称") }
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { if (folderName.isNotBlank()) onConfirm(folderName.trim()) }
+            ) { Text("确定") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消") }
+        }
+    )
+}
+
+@Composable
 fun DeleteConfirmDialog(
     fileName: String,
     onConfirm: () -> Unit,
