@@ -22,11 +22,13 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -70,6 +72,7 @@ fun FilesScreen(navController: NavHostController) {
     val isLoading by viewModel.isLoading.collectAsState()
     val currentParentId by viewModel.currentParentId.collectAsState()
     val selectedIds by viewModel.selectedFileIds.collectAsState()
+    val snackbarMessage by viewModel.snackbarMessage.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
 
     val context = LocalContext.current
@@ -111,6 +114,14 @@ fun FilesScreen(navController: NavHostController) {
         }
     }
 
+    // Snackbar observer
+    LaunchedEffect(snackbarMessage) {
+        snackbarMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearSnackbar()
+        }
+    }
+
     BackHandler(enabled = currentParentId != null) {
         viewModel.navigateBack()
     }
@@ -148,6 +159,11 @@ fun FilesScreen(navController: NavHostController) {
                     } else {
                         IconButton(onClick = { showCreateFolder = true }) {
                             Icon(Icons.Filled.CreateNewFolder, contentDescription = "新建文件夹")
+                        }
+                        IconButton(onClick = {
+                            scope.launch { app.fileRepository.syncFromMockData(context) }
+                        }) {
+                            Icon(Icons.Filled.Refresh, contentDescription = "刷新")
                         }
                     }
                 }
@@ -215,7 +231,18 @@ fun FilesScreen(navController: NavHostController) {
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        var isRefreshing by remember { mutableStateOf(false) }
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                scope.launch {
+                    isRefreshing = true
+                    app.fileRepository.syncFromMockData(context)
+                    isRefreshing = false
+                }
+            },
+            modifier = Modifier.padding(innerPadding).fillMaxSize()
+        ) {
             if (files.isEmpty() && !isLoading) {
                 EmptyState(icon = Icons.Filled.Folder, message = "暂无文件")
             } else {

@@ -57,6 +57,12 @@ class FilesViewModel(
 
     val isLoading = MutableStateFlow(false)
 
+    // Snackbar message one-shot
+    private val _snackbarMessage = MutableStateFlow<String?>(null)
+    val snackbarMessage: StateFlow<String?> = _snackbarMessage.asStateFlow()
+
+    fun clearSnackbar() { _snackbarMessage.value = null }
+
     // Multi-select state
     private val _selectedFileIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedFileIds: StateFlow<Set<String>> = _selectedFileIds.asStateFlow()
@@ -100,29 +106,35 @@ class FilesViewModel(
             for (id in ids) {
                 fileRepository.deleteFileRecursively(id)
             }
+            val count = ids.size
             clearSelection()
             updateUsedSpace()
+            _snackbarMessage.value = "已删除 $count 个项目"
         }
     }
 
     fun renameFile(fileId: String, newName: String) {
         viewModelScope.launch {
             fileRepository.renameFile(fileId, newName)
+            _snackbarMessage.value = "已重命名为「$newName」"
         }
     }
 
     fun createFolder(name: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val folder = FileEntity(
-                fileId = UUID.randomUUID().toString(),
-                name = name,
-                size = 0,
-                path = name,
-                type = "folder",
-                parentId = _currentParentId.value,
-                timestamp = System.currentTimeMillis()
-            )
-            fileRepository.insertFile(folder)
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                val folder = FileEntity(
+                    fileId = UUID.randomUUID().toString(),
+                    name = name,
+                    size = 0,
+                    path = name,
+                    type = "folder",
+                    parentId = _currentParentId.value,
+                    timestamp = System.currentTimeMillis()
+                )
+                fileRepository.insertFile(folder)
+            }
+            _snackbarMessage.value = "已创建文件夹「$name」"
         }
     }
 
@@ -132,7 +144,9 @@ class FilesViewModel(
             for (id in ids) {
                 fileRepository.moveFile(id, newParentId)
             }
+            val count = ids.size
             clearSelection()
+            _snackbarMessage.value = "已移动 $count 个项目"
         }
     }
 
@@ -179,8 +193,10 @@ class FilesViewModel(
                     fileRepository.insertFile(file)
                     fileRepository.recordTransfer(file.fileId)
                     updateUsedSpace()
+                    _snackbarMessage.value = "已上传「$name」"
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    _snackbarMessage.value = "上传失败: ${e.message}"
                 }
             }
             isLoading.value = false
