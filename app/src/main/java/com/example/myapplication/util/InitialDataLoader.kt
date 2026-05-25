@@ -22,19 +22,18 @@ object InitialDataLoader {
         val userRepo = app.userRepository
 
         if (!isInitialized(context)) {
-            // sync mock network data
             if (fileRepo.getFileCount() == 0) {
                 fileRepo.syncFromMockData(context)
             }
             userRepo.refreshUserInfo(context)
-            // update used space from actual file data
-            val usedSpace = fileRepo.getTotalUsedSpace()
-            userRepo.updateUsedSpace(usedSpace)
-
             context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                 .edit()
                 .putBoolean(KEY_DATA_INITIALIZED, true)
                 .apply()
         }
+
+        // Always recalculate used space from actual file data
+        val usedSpace = fileRepo.getTotalUsedSpace()
+        userRepo.updateUsedSpace(usedSpace)
     }
 }
