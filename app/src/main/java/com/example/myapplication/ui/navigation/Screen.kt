@@ -12,4 +12,7 @@ sealed class Screen(val route: String) {
     data object RecentList : Screen("recent_list/{listType}") {
         fun createRoute(listType: String): String = "recent_list/$listType"
     }
+    data object FolderPicker : Screen("folder_picker/{parentId}") {
+        fun createRoute(parentId: String = "root"): String = "folder_picker/$parentId"
+    }
 }

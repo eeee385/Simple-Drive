@@ -39,40 +39,6 @@ fun RenameDialog(
 }
 
 @Composable
-fun MoveFileDialog(
-    folders: List<FileEntity>,
-    onConfirm: (String?) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("移动到") },
-        text = {
-            if (folders.isEmpty()) {
-                Text("没有可用的文件夹")
-            } else {
-                androidx.compose.foundation.layout.Column {
-                    folders.forEach { folder ->
-                        Text(
-                            text = folder.name,
-                            modifier = Modifier
-                                .clickable { onConfirm(folder.fileId) }
-                                .padding(12.dp)
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(null) }) { Text("移动到根目录") }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
-        }
-    )
-}
-
-@Composable
 fun CreateFolderDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit

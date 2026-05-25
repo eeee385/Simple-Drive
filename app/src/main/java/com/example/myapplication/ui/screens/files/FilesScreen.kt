@@ -85,9 +85,8 @@ fun FilesScreen(navController: NavHostController) {
         uri?.let { viewModel.uploadFile(context, it) }
     }
 
-    // Dialog states for single-file actions from bottom bar
+    // Dialog states
     var renameTarget by remember { mutableStateOf<FileEntity?>(null) }
-    var moveTargets by remember { mutableStateOf<List<String>?>(null) }
     var deleteTargets by remember { mutableStateOf<List<String>?>(null) }
     var showCreateFolder by remember { mutableStateOf(false) }
 
@@ -102,14 +101,15 @@ fun FilesScreen(navController: NavHostController) {
         }
     }
 
-    // Preload folders for move dialog
-    var moveFolders by remember { mutableStateOf<List<FileEntity>>(emptyList()) }
-    LaunchedEffect(moveTargets) {
-        if (moveTargets != null) {
-            moveFolders = withContext(Dispatchers.IO) {
-                // Exclude all selected items from available folders
-                val excludeId = if (selectedIds.size == 1) selectedIds.first() else ""
-                app.fileRepository.getAllFoldersExcept(excludeId)
+    // Listen for folder picker result
+    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+    LaunchedEffect(savedStateHandle) {
+        savedStateHandle?.getLiveData<String?>("picker_result")?.observeForever { result ->
+            if (result != null) {
+                val ids = savedStateHandle.get<List<String>>("move_ids") ?: return@observeForever
+                viewModel.moveSelectedFiles(if (result == "root") null else result)
+                savedStateHandle.remove<List<String>>("move_ids")
+                savedStateHandle.remove<String>("picker_result")
             }
         }
     }
@@ -190,7 +190,10 @@ fun FilesScreen(navController: NavHostController) {
                             }
                             // 移动
                             TextButton(onClick = {
-                                moveTargets = selectedIds.toList()
+                                // Store selected IDs before navigating
+                                val ids = selectedIds.toList()
+                                navController.currentBackStackEntry?.savedStateHandle?.set("move_ids", ids)
+                                navController.navigate(com.example.myapplication.ui.navigation.Screen.FolderPicker.createRoute())
                             }) {
                                 Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = null)
                                 Text("移动", modifier = Modifier.padding(start = 4.dp))
@@ -280,18 +283,6 @@ fun FilesScreen(navController: NavHostController) {
                         renameTarget = null
                     },
                     onDismiss = { renameTarget = null }
-                )
-            }
-
-            // Move dialog
-            moveTargets?.let { ids ->
-                MoveFileDialog(
-                    folders = moveFolders,
-                    onConfirm = { newParentId ->
-                        viewModel.moveSelectedFiles(newParentId)
-                        moveTargets = null
-                    },
-                    onDismiss = { moveTargets = null }
                 )
             }
 

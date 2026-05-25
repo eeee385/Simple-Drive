@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.myapplication.ui.screens.files.FilesScreen
+import com.example.myapplication.ui.screens.files.FolderPickerScreen
 import com.example.myapplication.ui.screens.pan.PanScreen
 import com.example.myapplication.ui.screens.pan.RecentListScreen
 import com.example.myapplication.ui.screens.reader.ReaderScreen
@@ -46,6 +47,22 @@ fun AppNavigation(
         ) { backStackEntry ->
             val listType = backStackEntry.arguments?.getString("listType") ?: "browse"
             RecentListScreen(listType = listType, navController = navController)
+        }
+        composable(
+            route = Screen.FolderPicker.route,
+            arguments = listOf(navArgument("parentId") { type = NavType.StringType; defaultValue = "root" })
+        ) {
+            FolderPickerScreen(
+                initialParentId = "root",
+                onFolderSelected = { folderId ->
+                    navController.previousBackStackEntry?.savedStateHandle?.set(
+                        "picker_result",
+                        folderId ?: "root"
+                    )
+                    navController.popBackStack()
+                },
+                onCancel = { navController.popBackStack() }
+            )
         }
     }
 }
