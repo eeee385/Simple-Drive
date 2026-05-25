@@ -6,8 +6,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -17,35 +15,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.myapplication.data.local.db.entity.FileEntity
-
-@Composable
-fun FileContextMenu(
-    expanded: Boolean,
-    onDismiss: () -> Unit,
-    onRename: () -> Unit,
-    onMove: () -> Unit,
-    onDelete: () -> Unit,
-    onShare: () -> Unit
-) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        DropdownMenuItem(text = { Text("重命名") }, onClick = {
-            onDismiss()
-            onRename()
-        })
-        DropdownMenuItem(text = { Text("移动") }, onClick = {
-            onDismiss()
-            onMove()
-        })
-        DropdownMenuItem(text = { Text("删除") }, onClick = {
-            onDismiss()
-            onDelete()
-        })
-        DropdownMenuItem(text = { Text("分享") }, onClick = {
-            onDismiss()
-            onShare()
-        })
-    }
-}
 
 @Composable
 fun RenameDialog(

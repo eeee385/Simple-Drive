@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -38,20 +39,50 @@ class FilesViewModel(
 
     val isLoading = MutableStateFlow(false)
 
+    // Multi-select state
+    private val _selectedFileIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedFileIds: StateFlow<Set<String>> = _selectedFileIds.asStateFlow()
+
+    val isSelectionMode: StateFlow<Boolean> = _selectedFileIds
+        .map { it.isNotEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun toggleSelection(fileId: String) {
+        _selectedFileIds.value = _selectedFileIds.value.let { ids ->
+            if (fileId in ids) ids - fileId else ids + fileId
+        }
+    }
+
+    fun selectAll() {
+        viewModelScope.launch {
+            _selectedFileIds.value = files.value.map { it.fileId }.toSet()
+        }
+    }
+
+    fun clearSelection() {
+        _selectedFileIds.value = emptySet()
+    }
+
     fun navigateToFolder(parentId: String) {
+        clearSelection()
         navStack.addLast(_currentParentId.value)
         _currentParentId.value = parentId
     }
 
     fun navigateBack(): Boolean {
         if (navStack.isEmpty()) return false
+        clearSelection()
         _currentParentId.value = navStack.removeLast()
         return true
     }
 
-    fun deleteFile(fileId: String) {
+    fun deleteSelectedFiles() {
         viewModelScope.launch {
-            fileRepository.deleteFileRecursively(fileId)
+            val ids = _selectedFileIds.value.toList()
+            for (id in ids) {
+                fileRepository.deleteFileRecursively(id)
+            }
+            clearSelection()
             updateUsedSpace()
         }
     }
@@ -77,9 +108,13 @@ class FilesViewModel(
         }
     }
 
-    fun moveFile(fileId: String, newParentId: String?) {
+    fun moveSelectedFiles(newParentId: String?) {
         viewModelScope.launch {
-            fileRepository.moveFile(fileId, newParentId)
+            val ids = _selectedFileIds.value.toList()
+            for (id in ids) {
+                fileRepository.moveFile(id, newParentId)
+            }
+            clearSelection()
         }
     }
 
@@ -101,7 +136,6 @@ class FilesViewModel(
                         }
                     }
 
-                    // Copy to internal storage
                     val fileName = "${UUID.randomUUID()}_$name"
                     val uploadDir = java.io.File(context.filesDir, "uploads")
                     if (!uploadDir.exists()) uploadDir.mkdirs()
