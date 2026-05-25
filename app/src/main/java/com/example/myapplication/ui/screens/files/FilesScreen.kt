@@ -2,6 +2,7 @@ package com.example.myapplication.ui.screens.files
 
 import android.content.Intent
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
@@ -82,6 +83,11 @@ fun FilesScreen(navController: NavHostController) {
                 app.fileRepository.getFileById(parentId)?.name ?: "文件"
             }
         }
+    }
+
+    // Intercept system back button for folder navigation
+    BackHandler(enabled = currentParentId != null) {
+        viewModel.navigateBack()
     }
 
     // Preload folders for move dialog

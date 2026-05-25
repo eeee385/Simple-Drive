@@ -1,14 +1,14 @@
 package com.example.myapplication.ui.components
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,11 +16,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.example.myapplication.data.local.db.entity.FileEntity
 import com.example.myapplication.util.FileTypeHelper
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileListItem(
     file: FileEntity,
@@ -32,6 +36,7 @@ fun FileListItem(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    var pressOffset by remember { mutableStateOf(IntOffset.Zero) }
 
     Box(modifier = modifier.fillMaxWidth()) {
         ListItem(
@@ -51,34 +56,54 @@ fun FileListItem(
                     contentDescription = file.type
                 )
             },
-            modifier = Modifier.combinedClickable(
-                onClick = onClick,
-                onLongClick = { showMenu = true }
-            )
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(file.fileId) {
+                    detectTapGestures(
+                        onTap = { onClick() },
+                        onLongPress = { offset ->
+                            pressOffset = IntOffset(offset.x.toInt(), offset.y.toInt())
+                            showMenu = true
+                        }
+                    )
+                }
         )
 
-        DropdownMenu(
-            expanded = showMenu,
-            onDismissRequest = { showMenu = false }
-        ) {
-            DropdownMenuItem(
-                text = { Text("重命名") },
-                onClick = { showMenu = false; onRename() }
-            )
-            DropdownMenuItem(
-                text = { Text("移动") },
-                onClick = { showMenu = false; onMove() }
-            )
-            DropdownMenuItem(
-                text = { Text("删除") },
-                onClick = { showMenu = false; onDelete() }
-            )
-            DropdownMenuItem(
-                text = { Text("分享") },
-                onClick = { showMenu = false; onShare() }
-            )
+        if (showMenu) {
+            Popup(
+                alignment = androidx.compose.ui.Alignment.TopStart,
+                offset = IntOffset(
+                    pressOffset.x.coerceIn(0, 300),
+                    pressOffset.y
+                ),
+                onDismissRequest = { showMenu = false },
+                properties = PopupProperties(focusable = true)
+            ) {
+                Column(
+                    modifier = Modifier.background(
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shape = MaterialTheme.shapes.medium
+                    )
+                ) {
+                    PopupMenuItem("重命名") { showMenu = false; onRename() }
+                    PopupMenuItem("移动") { showMenu = false; onMove() }
+                    PopupMenuItem("删除") { showMenu = false; onDelete() }
+                    PopupMenuItem("分享") { showMenu = false; onShare() }
+                }
+            }
         }
     }
 
     HorizontalDivider()
+}
+
+@Composable
+private fun PopupMenuItem(label: String, onClick: () -> Unit) {
+    ListItem(
+        headlineContent = { Text(label) },
+        modifier = Modifier
+            .pointerInput(label) {
+                detectTapGestures(onTap = { onClick() })
+            }
+    )
 }
