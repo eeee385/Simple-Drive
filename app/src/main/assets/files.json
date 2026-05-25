@@ -1,0 +1,104 @@
+[
+    {
+        "fileId": "folder-001",
+        "name": "文档",
+        "type": "folder",
+        "path": "/文档",
+        "parentId": null,
+        "timestamp": 1715000000000,
+        "children": [
+            {
+                "fileId": "txt-001",
+                "name": "学习笔记.txt",
+                "type": "txt",
+                "size": 2048,
+                "path": "/文档/学习笔记.txt",
+                "parentId": "folder-001",
+                "timestamp": 1715000001000
+            },
+            {
+                "fileId": "txt-002",
+                "name": "项目需求.txt",
+                "type": "txt",
+                "size": 4096,
+                "path": "/文档/项目需求.txt",
+                "parentId": "folder-001",
+                "timestamp": 1715000002000
+            },
+            {
+                "fileId": "file-pdf-001",
+                "name": "开发文档.pdf",
+                "type": "other",
+                "size": 1024000,
+                "path": "/文档/开发文档.pdf",
+                "parentId": "folder-001",
+                "timestamp": 1715000003000
+            }
+        ]
+    },
+    {
+        "fileId": "folder-002",
+        "name": "视频",
+        "type": "folder",
+        "path": "/视频",
+        "parentId": null,
+        "timestamp": 1715000010000,
+        "children": [
+            {
+                "fileId": "video-001",
+                "name": "演示视频.mp4",
+                "type": "video",
+                "size": 52428800,
+                "path": "/视频/演示视频.mp4",
+                "parentId": "folder-002",
+                "timestamp": 1715000011000
+            },
+            {
+                "fileId": "video-002",
+                "name": "教程.mp4",
+                "type": "video",
+                "size": 104857600,
+                "path": "/视频/教程.mp4",
+                "parentId": "folder-002",
+                "timestamp": 1715000012000
+            }
+        ]
+    },
+    {
+        "fileId": "folder-003",
+        "name": "图片",
+        "type": "folder",
+        "path": "/图片",
+        "parentId": null,
+        "timestamp": 1715000020000,
+        "children": [
+            {
+                "fileId": "img-001",
+                "name": "截图1.png",
+                "type": "other",
+                "size": 512000,
+                "path": "/图片/截图1.png",
+                "parentId": "folder-003",
+                "timestamp": 1715000021000
+            },
+            {
+                "fileId": "img-002",
+                "name": "照片.jpg",
+                "type": "other",
+                "size": 2048000,
+                "path": "/图片/照片.jpg",
+                "parentId": "folder-003",
+                "timestamp": 1715000022000
+            }
+        ]
+    },
+    {
+        "fileId": "file-folder-004",
+        "name": "音乐",
+        "type": "folder",
+        "path": "/音乐",
+        "parentId": null,
+        "timestamp": 1715000030000,
+        "children": []
+    }
+]
