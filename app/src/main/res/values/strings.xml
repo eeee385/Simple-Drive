@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">简易网盘</string>
+    <string name="tab_pan">网盘</string>
+    <string name="tab_files">文件</string>
+    <string name="recent_browse">最近浏览</string>
+    <string name="recent_transfer">最近转存</string>
+    <string name="remaining_space">剩余空间</string>
+    <string name="rename">重命名</string>
+    <string name="move">移动</string>
+    <string name="delete">删除</string>
+    <string name="share">分享</string>
+    <string name="share_link_copied">分享链接已复制到剪贴板</string>
+    <string name="upload">上传</string>
+    <string name="confirm_delete">确认删除 %s 吗？</string>
+    <string name="empty_files">暂无文件</string>
+    <string name="empty_browse">暂无浏览记录</string>
+    <string name="empty_transfer">暂无转存记录</string>
+    <string name="empty_text">文件内容为空</string>
+    <string name="page_indicator">第 %1$d / %2$d 页</string>
+</resources>
