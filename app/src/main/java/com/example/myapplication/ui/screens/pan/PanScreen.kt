@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.myapplication.SimplePanApplication
+import com.example.myapplication.data.local.db.entity.FileEntity
 import com.example.myapplication.domain.model.UserInfo
 import com.example.myapplication.ui.components.EmptyState
 import com.example.myapplication.ui.navigation.Screen
@@ -43,7 +44,8 @@ import com.example.myapplication.util.TimeUtils
 
 @Composable
 fun PanScreen(navController: NavHostController) {
-    val app = LocalContext.current.applicationContext as SimplePanApplication
+    val context = LocalContext.current
+    val app = context.applicationContext as SimplePanApplication
     val viewModel: PanViewModel = viewModel(
         factory = PanViewModel.Factory(app.fileRepository, app.userRepository)
     )
@@ -70,7 +72,7 @@ fun PanScreen(navController: NavHostController) {
                     type = ft.file.type,
                     size = ft.file.size,
                     time = ft.transferTime,
-                    onClick = { navigateToFile(ft.file.fileId, ft.file.type, navController) }
+                    onClick = { navigateToFile(ft.file, navController, context) }
                 )
             }
         }
@@ -88,7 +90,7 @@ fun PanScreen(navController: NavHostController) {
                     type = fb.file.type,
                     size = fb.file.size,
                     time = fb.browseTime,
-                    onClick = { navigateToFile(fb.file.fileId, fb.file.type, navController) }
+                    onClick = { navigateToFile(fb.file, navController, context) }
                 )
             }
         }
@@ -177,14 +179,10 @@ private fun RecentFileItem(
     HorizontalDivider()
 }
 
-private fun navigateToFile(fileId: String, type: String, navController: NavHostController) {
-    when (type) {
-        "folder" -> navController.navigate(Screen.FileList.createRoute(fileId))
-        "txt" -> navController.navigate(Screen.Reader.createRoute(fileId))
-        "video", "audio" -> {
-            // Recent items may reference mock files without real content
-            // No-op: system player requires real file which isn't available from recent list
-        }
-        else -> { /* no navigation for other types */ }
+private fun navigateToFile(file: FileEntity, navController: NavHostController, context: android.content.Context) {
+    when (file.type) {
+        "folder" -> navController.navigate(Screen.FileList.createRoute(file.fileId))
+        "txt" -> navController.navigate(Screen.Reader.createRoute(file.fileId))
+        else -> com.example.myapplication.util.FileOpener.openFile(context, file)
     }
 }

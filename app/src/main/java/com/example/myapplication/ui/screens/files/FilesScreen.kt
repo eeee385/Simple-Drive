@@ -1,6 +1,5 @@
 package com.example.myapplication.ui.screens.files
 
-import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -47,7 +46,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.myapplication.SimplePanApplication
@@ -59,7 +57,6 @@ import com.example.myapplication.ui.navigation.Screen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -310,44 +307,12 @@ private fun onFileClick(
             viewModel.recordBrowse(file.fileId)
             navController.navigate(Screen.Reader.createRoute(file.fileId))
         }
-        "video" -> {
+        "video", "audio" -> {
             viewModel.recordBrowse(file.fileId)
-            openWithSystemPlayer(context, file, "video/*")
-        }
-        "audio" -> {
-            viewModel.recordBrowse(file.fileId)
-            openWithSystemPlayer(context, file, "audio/*")
+            com.example.myapplication.util.FileOpener.openFile(context, file)
         }
         else -> {
             Toast.makeText(context, "暂不支持预览此文件类型", Toast.LENGTH_SHORT).show()
         }
-    }
-}
-
-private fun openWithSystemPlayer(context: android.content.Context, file: FileEntity, mimeType: String) {
-    val contentUri = file.contentUri
-    if (contentUri.isNullOrBlank()) {
-        Toast.makeText(context, "模拟数据无法播放，请上传真实文件", Toast.LENGTH_SHORT).show()
-        return
-    }
-    try {
-        val realFile = File(context.filesDir, contentUri)
-        if (!realFile.exists()) {
-            Toast.makeText(context, "文件不存在", Toast.LENGTH_SHORT).show()
-            return
-        }
-        val uri = FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            realFile
-        )
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, mimeType)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        context.startActivity(intent)
-    } catch (e: Exception) {
-        Toast.makeText(context, "没有可用的播放器", Toast.LENGTH_SHORT).show()
     }
 }
