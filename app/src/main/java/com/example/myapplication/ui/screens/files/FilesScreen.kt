@@ -1,6 +1,5 @@
 package com.example.myapplication.ui.screens.files
 
-import android.content.Intent
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -310,19 +309,14 @@ private fun onFileClick(
         }
         "video" -> {
             viewModel.recordBrowse(file.fileId)
-            try {
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(
-                        android.net.Uri.parse("content://media/external/video/media"),
-                        "video/*"
-                    )
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                context.startActivity(intent)
-            } catch (e: Exception) {
-                Toast.makeText(context, "没有可用的视频播放器", Toast.LENGTH_SHORT).show()
-            }
+            Toast.makeText(context, "视频播放器（即将上线）", Toast.LENGTH_SHORT).show()
         }
-        else -> { /* no action */ }
+        "audio" -> {
+            viewModel.recordBrowse(file.fileId)
+            Toast.makeText(context, "音频播放器（即将上线）", Toast.LENGTH_SHORT).show()
+        }
+        else -> {
+            Toast.makeText(context, "暂不支持预览此文件类型", Toast.LENGTH_SHORT).show()
+        }
     }
 }
