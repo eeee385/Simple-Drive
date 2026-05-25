@@ -87,12 +87,16 @@ class FilesViewModel(
                     }
 
                     // Copy to internal storage
-                    val internalPath = "uploads/${UUID.randomUUID()}_$name"
+                    val fileName = "${UUID.randomUUID()}_$name"
+                    val uploadDir = java.io.File(context.filesDir, "uploads")
+                    if (!uploadDir.exists()) uploadDir.mkdirs()
+                    val destFile = java.io.File(uploadDir, fileName)
                     resolver.openInputStream(uri)?.use { input ->
-                        context.openFileOutput(internalPath, Context.MODE_PRIVATE).use { output ->
+                        destFile.outputStream().use { output ->
                             input.copyTo(output, bufferSize = 8192)
                         }
                     }
+                    val internalPath = "uploads/$fileName"
 
                     val type = FileTypeHelper.getFileTypeFromName(name)
                     val file = FileEntity(
