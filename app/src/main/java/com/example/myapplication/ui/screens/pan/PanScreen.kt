@@ -23,6 +23,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,7 +67,7 @@ fun PanScreen(navController: NavHostController) {
         if (recentTransfers.isEmpty()) {
             item { EmptyState(Icons.Filled.Bookmark, "暂无转存记录", Modifier.height(120.dp)) }
         } else {
-            items(recentTransfers, key = { it.file.fileId + "t" }) { ft ->
+            items(recentTransfers.take(4), key = { it.file.fileId + "t" }) { ft ->
                 RecentFileItem(
                     name = ft.file.name,
                     type = ft.file.type,
@@ -74,6 +75,11 @@ fun PanScreen(navController: NavHostController) {
                     time = ft.transferTime,
                     onClick = { navigateToFile(ft.file, navController, context) }
                 )
+            }
+            if (recentTransfers.size > 4) {
+                item {
+                    ViewAllButton { navController.navigate(Screen.RecentList.createRoute("transfer")) }
+                }
             }
         }
 
@@ -84,7 +90,7 @@ fun PanScreen(navController: NavHostController) {
         if (recentBrowses.isEmpty()) {
             item { EmptyState(Icons.Filled.History, "暂无浏览记录", Modifier.height(120.dp)) }
         } else {
-            items(recentBrowses, key = { it.file.fileId + "b" }) { fb ->
+            items(recentBrowses.take(4), key = { it.file.fileId + "b" }) { fb ->
                 RecentFileItem(
                     name = fb.file.name,
                     type = fb.file.type,
@@ -92,6 +98,11 @@ fun PanScreen(navController: NavHostController) {
                     time = fb.browseTime,
                     onClick = { navigateToFile(fb.file, navController, context) }
                 )
+            }
+            if (recentBrowses.size > 4) {
+                item {
+                    ViewAllButton { navController.navigate(Screen.RecentList.createRoute("browse")) }
+                }
             }
         }
     }
@@ -148,6 +159,16 @@ private fun SectionHeader(title: String, icon: androidx.compose.ui.graphics.vect
         modifier = Modifier.padding(vertical = 8.dp),
         color = MaterialTheme.colorScheme.primary
     )
+}
+
+@Composable
+private fun ViewAllButton(onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("查看全部")
+    }
 }
 
 @Composable

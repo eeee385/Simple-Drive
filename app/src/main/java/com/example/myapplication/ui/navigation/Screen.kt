@@ -9,4 +9,7 @@ sealed class Screen(val route: String) {
     data object Reader : Screen("reader/{fileId}") {
         fun createRoute(fileId: String): String = "reader/$fileId"
     }
+    data object RecentList : Screen("recent_list/{listType}") {
+        fun createRoute(listType: String): String = "recent_list/$listType"
+    }
 }

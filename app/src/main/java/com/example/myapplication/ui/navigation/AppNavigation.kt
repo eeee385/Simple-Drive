@@ -9,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.myapplication.ui.screens.files.FilesScreen
 import com.example.myapplication.ui.screens.pan.PanScreen
+import com.example.myapplication.ui.screens.pan.RecentListScreen
 import com.example.myapplication.ui.screens.reader.ReaderScreen
 
 @Composable
@@ -38,6 +39,13 @@ fun AppNavigation(
             arguments = listOf(navArgument("fileId") { type = NavType.StringType })
         ) {
             ReaderScreen(navController = navController)
+        }
+        composable(
+            route = Screen.RecentList.route,
+            arguments = listOf(navArgument("listType") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val listType = backStackEntry.arguments?.getString("listType") ?: "browse"
+            RecentListScreen(listType = listType, navController = navController)
         }
     }
 }
