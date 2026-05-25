@@ -181,6 +181,10 @@ private fun navigateToFile(fileId: String, type: String, navController: NavHostC
     when (type) {
         "folder" -> navController.navigate(Screen.FileList.createRoute(fileId))
         "txt" -> navController.navigate(Screen.Reader.createRoute(fileId))
-        else -> { /* just show the item, no navigation for now */ }
+        "video", "audio" -> {
+            // Recent items may reference mock files without real content
+            // No-op: system player requires real file which isn't available from recent list
+        }
+        else -> { /* no navigation for other types */ }
     }
 }
