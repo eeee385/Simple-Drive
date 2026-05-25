@@ -73,7 +73,7 @@ fun PanScreen(navController: NavHostController) {
                     type = ft.file.type,
                     size = ft.file.size,
                     time = ft.transferTime,
-                    onClick = { navigateToFile(ft.file, navController, context) }
+                    onClick = { navigateToFile(ft.file, navController, context, viewModel) }
                 )
             }
             if (recentTransfers.size > 4) {
@@ -96,7 +96,7 @@ fun PanScreen(navController: NavHostController) {
                     type = fb.file.type,
                     size = fb.file.size,
                     time = fb.browseTime,
-                    onClick = { navigateToFile(fb.file, navController, context) }
+                    onClick = { navigateToFile(fb.file, navController, context, viewModel) }
                 )
             }
             if (recentBrowses.size > 4) {
@@ -200,7 +200,8 @@ private fun RecentFileItem(
     HorizontalDivider()
 }
 
-private fun navigateToFile(file: FileEntity, navController: NavHostController, context: android.content.Context) {
+private fun navigateToFile(file: FileEntity, navController: NavHostController, context: android.content.Context, viewModel: PanViewModel) {
+    viewModel.recordBrowse(file.fileId)
     when (file.type) {
         "folder" -> navController.navigate(Screen.FileList.createRoute(file.fileId))
         "txt" -> navController.navigate(Screen.Reader.createRoute(file.fileId))

@@ -90,11 +90,12 @@ fun RecentListScreen(
                             .fillMaxWidth()
                             .pointerInput(item.name) {
                                 detectTapGestures(onTap = {
+                                    viewModel.recordBrowse(item.file.fileId)
                                     when (item.file.type) {
-    "folder" -> navController.navigate(Screen.FileList.createRoute(item.file.fileId))
-    "txt" -> navController.navigate(Screen.Reader.createRoute(item.file.fileId))
-    else -> FileOpener.openFile(context, item.file)
-}
+                                        "folder" -> navController.navigate(Screen.FileList.createRoute(item.file.fileId))
+                                        "txt" -> navController.navigate(Screen.Reader.createRoute(item.file.fileId))
+                                        else -> FileOpener.openFile(context, item.file)
+                                    }
                                 })
                             }
                     )

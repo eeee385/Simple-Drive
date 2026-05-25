@@ -9,6 +9,7 @@ import com.example.myapplication.data.repository.FileRepository
 import com.example.myapplication.data.repository.UserRepository
 import com.example.myapplication.domain.model.UserInfo
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
@@ -25,6 +26,10 @@ class PanViewModel(
 
     val recentTransfers: StateFlow<List<FileWithTransferTime>> = fileRepository.getRecentTransfers(20)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun recordBrowse(fileId: String) {
+        viewModelScope.launch { fileRepository.recordBrowse(fileId) }
+    }
 
     class Factory(
         private val fileRepository: FileRepository,
