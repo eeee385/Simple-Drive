@@ -26,6 +26,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -55,7 +56,7 @@ fun FolderPickerScreen(
     var folders by remember { mutableStateOf<List<FileEntity>>(emptyList()) }
     var currentFolderName by remember { mutableStateOf("根目录") }
     val navStack = remember { mutableListOf<String?>() }
-    val nameStack = remember { mutableListOf("根目录") }
+    val nameStack = remember { mutableStateListOf("根目录") }
 
     // Build path string: e.g. "根目录/文档/子文件夹"
     val pathString = nameStack.joinToString("/")
