@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.screens.files
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +31,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -44,6 +44,7 @@ import kotlinx.coroutines.withContext
 @Composable
 fun FolderPickerScreen(
     initialParentId: String,
+    excludedFolderIds: Set<String> = emptySet(),
     onFolderSelected: (String?) -> Unit,
     onCancel: () -> Unit
 ) {
@@ -53,16 +54,30 @@ fun FolderPickerScreen(
     var selectedFolderName by remember { mutableStateOf<String?>(null) }
     var folders by remember { mutableStateOf<List<FileEntity>>(emptyList()) }
     var currentFolderName by remember { mutableStateOf("根目录") }
-    val navStack = remember { ArrayDeque<String?>() }
+    val navStack = remember { mutableListOf<String?>() }
+    val nameStack = remember { mutableListOf("根目录") }
+
+    // Build path string: e.g. "根目录/文档/子文件夹"
+    val pathString = nameStack.joinToString("/")
 
     LaunchedEffect(currentParentId) {
         withContext(Dispatchers.IO) {
             val all = app.fileRepository.getFilesByParentId(currentParentId).first()
-            folders = all.filter { it.type == "folder" }
+            folders = all.filter { it.type == "folder" && it.fileId !in excludedFolderIds }
             currentFolderName = if (currentParentId != null) {
-                app.fileRepository.getFileById(currentParentId!!)?.name ?: "根目录"
+                val file = app.fileRepository.getFileById(currentParentId!!)
+                file?.name ?: "根目录"
             } else "根目录"
         }
+    }
+
+    // System back button
+    BackHandler(enabled = currentParentId != null) {
+        navStack.removeLastOrNull()
+        nameStack.removeLastOrNull()
+        currentParentId = navStack.lastOrNull()
+        selectedFolderId = null
+        selectedFolderName = null
     }
 
     Scaffold(
@@ -72,7 +87,9 @@ fun FolderPickerScreen(
                 navigationIcon = {
                     if (currentParentId != null) {
                         IconButton(onClick = {
-                            currentParentId = navStack.removeLastOrNull()
+                            navStack.removeLastOrNull()
+                            nameStack.removeLastOrNull()
+                            currentParentId = navStack.lastOrNull()
                             selectedFolderId = null
                             selectedFolderName = null
                         }) {
@@ -93,9 +110,9 @@ fun FolderPickerScreen(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("目标位置: ")
+                Text("目标: ")
                 Text(
-                    selectedFolderName ?: "根目录",
+                    pathString,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -135,7 +152,8 @@ fun FolderPickerScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                navStack.addLast(currentParentId)
+                                navStack.add(currentParentId)
+                                nameStack.add(folder.name)
                                 currentParentId = folder.fileId
                             }
                     )

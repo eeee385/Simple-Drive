@@ -52,8 +52,12 @@ fun AppNavigation(
             route = Screen.FolderPicker.route,
             arguments = listOf(navArgument("parentId") { type = NavType.StringType; defaultValue = "root" })
         ) {
+            val moveIds = navController.previousBackStackEntry
+                ?.savedStateHandle
+                ?.get<List<String>>("move_ids") ?: emptyList()
             FolderPickerScreen(
                 initialParentId = "root",
+                excludedFolderIds = moveIds.toSet(),
                 onFolderSelected = { folderId ->
                     navController.previousBackStackEntry?.savedStateHandle?.set(
                         "picker_result",
