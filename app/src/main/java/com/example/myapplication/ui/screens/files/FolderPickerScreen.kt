@@ -101,18 +101,20 @@ fun FolderPickerScreen(
             }
             HorizontalDivider()
 
-            // Root option
-            ListItem(
-                headlineContent = { Text("根目录") },
-                leadingContent = {
-                    Checkbox(
-                        checked = selectedFolderId == null,
-                        onCheckedChange = { if (it) { selectedFolderId = null; selectedFolderName = "根目录" } }
-                    )
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            HorizontalDivider()
+            // Root option (only at top level)
+            if (currentParentId == null) {
+                ListItem(
+                    headlineContent = { Text("根目录") },
+                    leadingContent = {
+                        Checkbox(
+                            checked = selectedFolderId == null,
+                            onCheckedChange = { if (it) { selectedFolderId = null; selectedFolderName = "根目录" } }
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                HorizontalDivider()
+            }
 
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(folders, key = { it.fileId }) { folder ->

@@ -21,7 +21,8 @@ object FileTypeHelper {
     }
 
     fun formatFileSize(bytes: Long): String {
-        if (bytes <= 0) return ""
+        if (bytes < 0) return ""
+        if (bytes == 0L) return "0 B"
         return when {
             bytes < 1024 -> "${bytes} B"
             bytes < 1024 * 1024 -> "${bytes / 1024} KB"
