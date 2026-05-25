@@ -90,6 +90,9 @@ fun FilesScreen(navController: NavHostController) {
     var deleteTargets by remember { mutableStateOf<List<String>?>(null) }
     var showCreateFolder by remember { mutableStateOf(false) }
 
+    // Pending move state (stored locally, not in savedStateHandle)
+    var pendingMoveIds by remember { mutableStateOf<List<String>?>(null) }
+
     var currentFolderName by remember { mutableStateOf("文件") }
 
     LaunchedEffect(currentParentId) {
@@ -101,16 +104,19 @@ fun FilesScreen(navController: NavHostController) {
         }
     }
 
-    // Listen for folder picker result
-    val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-    LaunchedEffect(savedStateHandle) {
-        savedStateHandle?.getLiveData<String?>("picker_result")?.observeForever { result ->
-            if (result != null) {
-                val ids = savedStateHandle.get<List<String>>("move_ids") ?: return@observeForever
+    // Listen for folder picker result from savedStateHandle
+    val backStackEntryId = navController.currentBackStackEntry?.id
+    LaunchedEffect(backStackEntryId) {
+        // When returning from FolderPicker, check for result
+        val handle = navController.currentBackStackEntry?.savedStateHandle
+        val result = handle?.get<String>("picker_result")
+        if (result != null) {
+            val ids = pendingMoveIds
+            if (ids != null) {
                 viewModel.moveSelectedFiles(if (result == "root") null else result)
-                savedStateHandle.remove<List<String>>("move_ids")
-                savedStateHandle.remove<String>("picker_result")
+                pendingMoveIds = null
             }
+            handle.remove<String>("picker_result")
         }
     }
 
@@ -190,9 +196,11 @@ fun FilesScreen(navController: NavHostController) {
                             }
                             // 移动
                             TextButton(onClick = {
-                                // Store selected IDs before navigating
-                                val ids = selectedIds.toList()
-                                navController.currentBackStackEntry?.savedStateHandle?.set("move_ids", ids)
+                                pendingMoveIds = selectedIds.toList()
+                                navController.currentBackStackEntry?.savedStateHandle?.set(
+                                    "move_ids",
+                                    selectedIds.toList()
+                                )
                                 navController.navigate(com.example.myapplication.ui.navigation.Screen.FolderPicker.createRoute())
                             }) {
                                 Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = null)
