@@ -35,7 +35,25 @@ class FilesViewModel(
 
     val files: StateFlow<List<FileEntity>> = _currentParentId
         .flatMapLatest { parentId -> fileRepository.getFilesByParentId(parentId) }
+        .map { list -> list.sortedWith(fileSortComparator) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    companion object {
+        private val typeOrder = mapOf(
+            "folder" to 0,
+            "txt" to 1,
+            "image" to 2,
+            "video" to 3,
+            "audio" to 4
+        )
+
+        val fileSortComparator = Comparator<FileEntity> { a, b ->
+            val typeA = typeOrder[a.type] ?: 99
+            val typeB = typeOrder[b.type] ?: 99
+            if (typeA != typeB) typeA - typeB
+            else a.name.lowercase().compareTo(b.name.lowercase())
+        }
+    }
 
     val isLoading = MutableStateFlow(false)
 
