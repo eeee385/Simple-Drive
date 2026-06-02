@@ -62,8 +62,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private var lastProcessedShareId: String? = null
-
     private fun checkClipboardForDeepLink() {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager ?: return
         val clipText = clipboard.primaryClip
@@ -73,9 +71,14 @@ class MainActivity : ComponentActivity() {
         val prefix = "simplepan://share?sid="
         if (!clipText.startsWith(prefix)) return
         val shareId = clipText.removePrefix(prefix)
-        if (shareId.isBlank() || shareId == lastProcessedShareId) return
+        if (shareId.isBlank()) return
 
-        lastProcessedShareId = shareId
+        // Persist processed shareIds so same link doesn't trigger again across restarts
+        val prefs = getSharedPreferences("deep_link", Context.MODE_PRIVATE)
+        val processed = prefs.getStringSet("processed_ids", emptySet()) ?: emptySet()
+        if (shareId in processed) return
+
+        prefs.edit().putStringSet("processed_ids", processed + shareId).apply()
         (application as SimplePanApplication).onDeepLinkShareId?.invoke(shareId)
     }
 
@@ -83,7 +86,7 @@ class MainActivity : ComponentActivity() {
         val data: Uri = intent.data ?: return
         if (data.scheme == "simplepan" && data.host == "share") {
             val shareId = data.getQueryParameter("sid") ?: return
-            lastProcessedShareId = shareId
+            (application as SimplePanApplication).onDeepLinkShareId?.invoke(shareId)
             (application as SimplePanApplication).onDeepLinkShareId?.invoke(shareId)
         }
     }
