@@ -230,10 +230,6 @@ fun FilesScreen(navController: NavHostController) {
                                         val link = app.shareRepository.generateShareLink(id)
                                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                         clipboard.setPrimaryClip(android.content.ClipData.newPlainText("share_link", link))
-                                        // Save shareId for auto-navigate on next app open
-                                        val sid = link.removePrefix("simplepan://share?sid=")
-                                        context.getSharedPreferences("deep_link", android.content.Context.MODE_PRIVATE)
-                                            .edit().putString("pending_share_id", sid).apply()
                                         snackbarHostState.showSnackbar("分享链接已复制到剪贴板")
                                     }
                                 }) {

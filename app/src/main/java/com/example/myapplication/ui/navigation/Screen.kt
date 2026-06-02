@@ -15,4 +15,7 @@ sealed class Screen(val route: String) {
     data object FolderPicker : Screen("folder_picker/{parentId}") {
         fun createRoute(parentId: String = "root"): String = "folder_picker/$parentId"
     }
+    data object SharePreview : Screen("share_preview/{shareId}") {
+        fun createRoute(shareId: String): String = "share_preview/$shareId"
+    }
 }

@@ -11,6 +11,7 @@ import com.example.myapplication.ui.screens.files.FilesScreen
 import com.example.myapplication.ui.screens.files.FolderPickerScreen
 import com.example.myapplication.ui.screens.pan.PanScreen
 import com.example.myapplication.ui.screens.pan.RecentListScreen
+import com.example.myapplication.ui.screens.pan.SharePreviewScreen
 import com.example.myapplication.ui.screens.reader.ReaderScreen
 
 @Composable
@@ -47,6 +48,23 @@ fun AppNavigation(
         ) { backStackEntry ->
             val listType = backStackEntry.arguments?.getString("listType") ?: "browse"
             RecentListScreen(listType = listType, navController = navController)
+        }
+        composable(
+            route = Screen.SharePreview.route,
+            arguments = listOf(navArgument("shareId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val shareId = backStackEntry.arguments?.getString("shareId") ?: return@composable
+            SharePreviewScreen(
+                shareId = shareId,
+                onDismiss = { navController.popBackStack() },
+                onTransfer = {
+                    android.widget.Toast.makeText(
+                        navController.context, "转存成功",
+                        android.widget.Toast.LENGTH_SHORT
+                    ).show()
+                    navController.popBackStack()
+                }
+            )
         }
         composable(
             route = Screen.FolderPicker.route,
