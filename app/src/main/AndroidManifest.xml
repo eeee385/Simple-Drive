@@ -22,11 +22,17 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- DeepLink: simplepan://share?sid=xxx -->
+            <!-- DeepLink via browser (requires BROWSABLE) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="simplepan" android:host="share" />
+            </intent-filter>
+            <!-- DeepLink via adb / explicit intent (no BROWSABLE required) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="simplepan" android:host="share" />
             </intent-filter>
         </activity>
