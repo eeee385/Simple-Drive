@@ -1,5 +1,7 @@
 package com.example.myapplication
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -35,9 +38,25 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleDeepLink(intent)
         setContent {
             MyApplicationTheme {
                 MainApp()
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    private fun handleDeepLink(intent: Intent) {
+        val data: Uri? = intent.data
+        if (data?.scheme == "simplepan" && data.host == "share") {
+            val shareId = data.getQueryParameter("sid")
+            if (shareId != null) {
+                (application as SimplePanApplication).submitDeepLinkShareId(shareId)
             }
         }
     }
@@ -65,6 +84,39 @@ fun MainApp() {
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         com.example.myapplication.util.InitialDataLoader.initialize(context)
+    }
+
+    // DeepLink handler: observe pending shareId and navigate
+    val app = context.applicationContext as SimplePanApplication
+    val pendingShareId by app.pendingShareId.collectAsState()
+    LaunchedEffect(pendingShareId) {
+        val shareId = pendingShareId ?: return@LaunchedEffect
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val fileId = app.shareRepository.resolveShareLink(shareId)
+            if (fileId != null) {
+                val file = app.fileRepository.getFileById(fileId)
+                if (file != null) {
+                    // Navigate to the file's location
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        if (file.type == "folder") {
+                            // Navigate to files tab and enter the folder
+                            selectedIndex = 1
+                            navController.navigate(Screen.FileList.createRoute(file.fileId)) {
+                                popUpTo(Screen.Files.route) { inclusive = true }
+                            }
+                        } else {
+                            // Navigate to file's parent folder
+                            selectedIndex = 1
+                            val parentId = file.parentId ?: "root"
+                            navController.navigate(Screen.FileList.createRoute(parentId)) {
+                                popUpTo(Screen.Files.route) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        app.consumeDeepLinkShareId()
     }
 
     Scaffold(
