@@ -98,20 +98,13 @@ fun MainApp() {
                 if (file != null) {
                     // Navigate to the file's location
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                        if (file.type == "folder") {
-                            // Navigate to files tab and enter the folder
-                            selectedIndex = 1
-                            navController.navigate(Screen.FileList.createRoute(file.fileId)) {
-                                popUpTo(Screen.Files.route) { inclusive = true }
-                            }
-                        } else {
-                            // Navigate to file's parent folder
-                            selectedIndex = 1
-                            val parentId = file.parentId ?: "root"
-                            navController.navigate(Screen.FileList.createRoute(parentId)) {
-                                popUpTo(Screen.Files.route) { inclusive = true }
-                            }
+                        selectedIndex = 1
+                        val targetId = if (file.type == "folder") file.fileId else (file.parentId ?: "root")
+                        // First switch to files tab, then navigate to folder
+                        navController.navigate(Screen.Files.route) {
+                            popUpTo(Screen.Pan.route) { inclusive = true }
                         }
+                        navController.navigate(Screen.FileList.createRoute(targetId))
                     }
                 }
             }
