@@ -80,6 +80,7 @@ class MainActivity : ComponentActivity() {
 
         prefs.edit().putStringSet("processed_ids", processed + shareId).apply()
         (application as SimplePanApplication).onDeepLinkShareId?.invoke(shareId)
+        // 获取当前进程的Application对象 as 强制类型转换为 SimplePanApplication类型
     }
 
     private fun handleDeepLink(intent: Intent) {
