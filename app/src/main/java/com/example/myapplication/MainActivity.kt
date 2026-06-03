@@ -56,7 +56,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Delay to next frame so Compose DisposableEffect has registered the callback
+        // 延迟以保证回调成功注册
         window.decorView.post {
             checkClipboardForDeepLink()
         }
@@ -81,13 +81,13 @@ class MainActivity : ComponentActivity() {
         prefs.edit().putStringSet("processed_ids", processed + shareId).apply()
         (application as SimplePanApplication).onDeepLinkShareId?.invoke(shareId)
         // 获取当前进程的Application对象 as 强制类型转换为 SimplePanApplication类型
+        // 这里程序invoke拿到了shareid，就会调用之前注册的lambda
     }
 
     private fun handleDeepLink(intent: Intent) {
         val data: Uri = intent.data ?: return
         if (data.scheme == "simplepan" && data.host == "share") {
             val shareId = data.getQueryParameter("sid") ?: return
-            (application as SimplePanApplication).onDeepLinkShareId?.invoke(shareId)
             (application as SimplePanApplication).onDeepLinkShareId?.invoke(shareId)
         }
     }
@@ -117,6 +117,7 @@ fun MainApp() {
         com.example.myapplication.util.InitialDataLoader.initialize(context)
     }
 
+    // 此处就是 注册回调 告诉simplepan你拿到了shareid后就调用这个lambda，去打开预览页
     // DeepLink handler: register callback that Activity invokes directly
     val app = context.applicationContext as SimplePanApplication
     val scope = rememberCoroutineScope()
