@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,12 +26,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
@@ -58,10 +59,7 @@ fun ReaderScreen(navController: NavController) {
     val app = context.applicationContext as SimplePanApplication
     val fileId = navController.currentBackStackEntry?.arguments?.getString("fileId") ?: ""
 
-    val viewModel: ReaderViewModel = viewModel(
-        factory = ReaderViewModel.Factory(app.fileRepository)
-    )
-
+    val viewModel: ReaderViewModel = viewModel(factory = ReaderViewModel.Factory(app.fileRepository))
     val fullText by viewModel.fullText.collectAsState()
     val fileName by viewModel.fileName.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -70,22 +68,32 @@ fun ReaderScreen(navController: NavController) {
         withContext(Dispatchers.IO) { viewModel.initialize(context, fileId) }
     }
 
-    if (isLoading) {
-        Scaffold { LoadingOverlay() }
-        return
-    }
-
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val paddingPx = with(density) { 16.dp.roundToPx() }
     val textStyle = TextStyle(fontSize = 18.sp, lineHeight = 28.sp, color = Color(0xFF1A1A1A))
 
-    // Compute pages based on available screen size
-    var pages by remember { mutableStateOf<List<PageData>>(emptyList()) }
-    val pagerState = rememberPagerState(pageCount = { pages.size.coerceAtLeast(1) })
+    var containerWidth by remember { mutableIntStateOf(0) }
+    var containerHeight by remember { mutableIntStateOf(0) }
     var showBars by remember { mutableStateOf(true) }
 
+    // Compute pages synchronously
+    val pageWidth = containerWidth - paddingPx * 2
+    val pageHeight = containerHeight - paddingPx * 2
+    val pages = remember(fullText, pageWidth, pageHeight) {
+        if (fullText.isNotEmpty() && pageWidth > 0 && pageHeight > 0) {
+            paginate(fullText, measurer, textStyle, pageWidth, pageHeight)
+        } else emptyList()
+    }
+
+    val pagerState = rememberPagerState(pageCount = { pages.size.coerceAtLeast(1) })
+
     BackHandler { navController.popBackStack() }
+
+    if (isLoading) {
+        Scaffold { LoadingOverlay() }
+        return
+    }
 
     Scaffold(
         topBar = {
@@ -96,7 +104,10 @@ fun ReaderScreen(navController: NavController) {
                             Column {
                                 Text(fileName.ifEmpty { "阅读" }, maxLines = 1)
                                 if (pages.isNotEmpty()) {
-                                    Text("${pagerState.currentPage + 1} / ${pages.size}", style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        "${pagerState.currentPage + 1} / ${pages.size}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
                                 }
                             }
                         },
@@ -123,41 +134,25 @@ fun ReaderScreen(navController: NavController) {
             return@Scaffold
         }
 
-        // Measure available space and paginate
-        BoxWithConstraints(
+        // Outer Box measures available space, enabling pagination
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .onSizeChanged { containerWidth = it.width; containerHeight = it.height }
         ) {
-            val availableWidthPx = with(density) { maxWidth.roundToPx() } - paddingPx * 2
-            val availableHeightPx = with(density) { maxHeight.roundToPx() } - paddingPx * 2
-
-            // Paginate when dimensions are known
-            LaunchedEffect(fullText, maxWidth, maxHeight) {
-                if (availableWidthPx > 0 && availableHeightPx > 0) {
-                    pages = paginate(
-                        fullText = fullText,
-                        measurer = measurer,
-                        style = textStyle,
-                        pageWidth = availableWidthPx,
-                        pageHeight = availableHeightPx
-                    )
-                }
-            }
-
-            if (pages.isEmpty()) return@BoxWithConstraints
-
-            HorizontalPager(
-                state = pagerState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) { detectTapGestures { showBars = !showBars } }
-            ) { page ->
-                Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-                    Text(
-                        text = pages.getOrNull(page)?.text ?: "",
-                        style = textStyle
-                    )
+            if (pages.isEmpty()) {
+                Text("分页中...", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
+            } else {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) { detectTapGestures { showBars = !showBars } }
+                ) { page ->
+                    Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                        Text(text = pages.getOrNull(page)?.text ?: "", style = textStyle)
+                    }
                 }
             }
         }
@@ -171,30 +166,33 @@ private fun paginate(
     pageWidth: Int,
     pageHeight: Int
 ): List<PageData> {
+    if (fullText.isEmpty()) return emptyList()
+
+    val result = measurer.measure(
+        text = AnnotatedString(fullText),
+        style = style,
+        constraints = Constraints(maxWidth = pageWidth),
+        maxLines = Int.MAX_VALUE
+    )
+
     val pages = mutableListOf<PageData>()
-    var offset = 0
+    var currentLine = 0
+    val totalLines = result.lineCount
 
-    while (offset < fullText.length) {
-        val result = measurer.measure(
-            text = AnnotatedString(fullText.substring(offset)),
-            style = style,
-            constraints = Constraints(maxWidth = pageWidth),
-            maxLines = Int.MAX_VALUE
-        )
-
-        var lastLine = 0
+    while (currentLine < totalLines) {
+        val pageLineStart = currentLine
         var accumulatedHeight = 0f
-        for (i in 0 until result.lineCount) {
-            val lineH = result.getLineBottom(i) - result.getLineTop(i)
-            if (accumulatedHeight + lineH > pageHeight) break
-            accumulatedHeight += lineH
-            lastLine = i + 1
-        }
-        if (lastLine == 0) lastLine = 1
 
-        val endOffset = result.getLineEnd(lastLine - 1, visibleEnd = true)
-        pages.add(PageData(text = fullText.substring(offset, offset + endOffset), pageIndex = pages.size))
-        offset += endOffset
+        while (currentLine < totalLines) {
+            val lineHeight = result.getLineBottom(currentLine) - result.getLineTop(currentLine)
+            if (accumulatedHeight + lineHeight > pageHeight && accumulatedHeight > 0) break
+            accumulatedHeight += lineHeight
+            currentLine++
+        }
+
+        val startChar = result.getLineStart(pageLineStart)
+        val endChar = result.getLineEnd(currentLine - 1, visibleEnd = true)
+        pages.add(PageData(text = fullText.substring(startChar, endChar), pageIndex = pages.size))
     }
 
     return pages
