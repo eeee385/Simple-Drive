@@ -36,11 +36,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -68,7 +64,6 @@ fun ReaderScreen(navController: NavController) {
         withContext(Dispatchers.IO) { viewModel.initialize(context, fileId) }
     }
 
-    val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     val paddingPx = with(density) { 16.dp.roundToPx() }
     val textStyle = TextStyle(fontSize = 18.sp, lineHeight = 28.sp, color = Color(0xFF1A1A1A))
@@ -76,24 +71,27 @@ fun ReaderScreen(navController: NavController) {
     var containerWidth by remember { mutableIntStateOf(0) }
     var containerHeight by remember { mutableIntStateOf(0) }
     var showBars by remember { mutableStateOf(true) }
+    // Auto-reset when fullText changes (new file)
+    var pages by remember(fullText) { mutableStateOf<List<PageData>>(emptyList()) }
 
-    // Compute pages synchronously
+    // Paginate on background thread
     val pageWidth = containerWidth - paddingPx * 2
     val pageHeight = containerHeight - paddingPx * 2
-    val pages = remember(fullText, pageWidth, pageHeight) {
+    val densityFloat = density.density
+    LaunchedEffect(fullText, pageWidth, pageHeight) {
         if (fullText.isNotEmpty() && pageWidth > 0 && pageHeight > 0) {
-            paginate(fullText, measurer, textStyle, pageWidth, pageHeight)
-        } else emptyList()
+            pages = withContext(Dispatchers.Default) {
+                paginateWithStaticLayout(fullText, pageWidth, pageHeight, densityFloat)
+            }
+        }
     }
 
     val pagerState = rememberPagerState(pageCount = { pages.size.coerceAtLeast(1) })
 
     BackHandler { navController.popBackStack() }
 
-    if (isLoading) {
-        Scaffold { LoadingOverlay() }
-        return
-    }
+    // Show loading while text or pages aren't ready
+    val showLoading = isLoading || (fullText.isNotEmpty() && pages.isEmpty())
 
     Scaffold(
         topBar = {
@@ -127,22 +125,17 @@ fun ReaderScreen(navController: NavController) {
             }
         }
     ) { innerPadding ->
-        if (fullText.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(innerPadding)) {
-                Text("文件内容为空", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
-            }
-            return@Scaffold
-        }
-
-        // Outer Box measures available space, enabling pagination
+        // Outer Box measures available space, enabling pagination (always renders)
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .onSizeChanged { containerWidth = it.width; containerHeight = it.height }
         ) {
-            if (pages.isEmpty()) {
-                Text("分页中...", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
+            if (showLoading) {
+                LoadingOverlay()
+            } else if (fullText.isEmpty()) {
+                Text("文件内容为空", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(16.dp))
             } else {
                 HorizontalPager(
                     state = pagerState,
@@ -159,39 +152,40 @@ fun ReaderScreen(navController: NavController) {
     }
 }
 
-private fun paginate(
+private fun paginateWithStaticLayout(
     fullText: String,
-    measurer: TextMeasurer,
-    style: TextStyle,
-    pageWidth: Int,
-    pageHeight: Int
+    pageWidthPx: Int,
+    pageHeightPx: Int,
+    density: Float
 ): List<PageData> {
-    if (fullText.isEmpty()) return emptyList()
+    if (fullText.isEmpty() || pageWidthPx <= 0 || pageHeightPx <= 0) return emptyList()
 
-    val result = measurer.measure(
-        text = AnnotatedString(fullText),
-        style = style,
-        constraints = Constraints(maxWidth = pageWidth),
-        maxLines = Int.MAX_VALUE
-    )
+    val paint = android.text.TextPaint().apply {
+        textSize = 18f * density  // 18sp → px
+        isAntiAlias = true
+    }
+
+    val layout = android.text.StaticLayout.Builder
+        .obtain(fullText, 0, fullText.length, paint, pageWidthPx)
+        .build()
 
     val pages = mutableListOf<PageData>()
     var currentLine = 0
-    val totalLines = result.lineCount
+    val totalLines = layout.lineCount
 
     while (currentLine < totalLines) {
         val pageLineStart = currentLine
         var accumulatedHeight = 0f
 
         while (currentLine < totalLines) {
-            val lineHeight = result.getLineBottom(currentLine) - result.getLineTop(currentLine)
-            if (accumulatedHeight + lineHeight > pageHeight && accumulatedHeight > 0) break
+            val lineHeight = layout.getLineBottom(currentLine) - layout.getLineTop(currentLine)
+            if (accumulatedHeight + lineHeight > pageHeightPx && accumulatedHeight > 0) break
             accumulatedHeight += lineHeight
             currentLine++
         }
 
-        val startChar = result.getLineStart(pageLineStart)
-        val endChar = result.getLineEnd(currentLine - 1, visibleEnd = true)
+        val startChar = layout.getLineStart(pageLineStart)
+        val endChar = layout.getLineEnd(currentLine - 1)
         pages.add(PageData(text = fullText.substring(startChar, endChar), pageIndex = pages.size))
     }
 
