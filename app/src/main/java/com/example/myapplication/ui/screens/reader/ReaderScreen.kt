@@ -155,7 +155,7 @@ private fun paginateWithStaticLayout(
     if (fullText.isEmpty() || pageWidthPx <= 0 || pageHeightPx <= 0) return emptyList()
 
     val paint = android.text.TextPaint().apply {
-        textSize = 18f * density  // 18sp → px
+        textSize = 18f * density
         isAntiAlias = true
     }
 
@@ -167,14 +167,15 @@ private fun paginateWithStaticLayout(
     var currentLine = 0
     val totalLines = layout.lineCount
 
+    // Use Compose's actual line height for page calculation, not StaticLayout's
+    val composeLineHeight = 28f * density
+
     while (currentLine < totalLines) {
         val pageLineStart = currentLine
-        var accumulatedHeight = 0f
 
         while (currentLine < totalLines) {
-            val lineHeight = layout.getLineBottom(currentLine) - layout.getLineTop(currentLine)
-            if (accumulatedHeight + lineHeight > pageHeightPx && accumulatedHeight > 0) break
-            accumulatedHeight += lineHeight
+            val linesInPage = currentLine - pageLineStart + 1
+            if (linesInPage * composeLineHeight > pageHeightPx && currentLine > pageLineStart) break
             currentLine++
         }
 
