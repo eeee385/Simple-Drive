@@ -73,11 +73,15 @@ fun FolderPickerScreen(
     }
 
     // System back button
-    BackHandler(enabled = navStack.isNotEmpty()) {
-        nameStack.removeLastOrNull()
-        currentParentId = navStack.removeLastOrNull()
-        selectedFolderId = null
-        selectedFolderName = null
+    BackHandler {
+        if (navStack.isNotEmpty()) {
+            nameStack.removeLastOrNull()
+            currentParentId = navStack.removeLastOrNull()
+            selectedFolderId = null
+            selectedFolderName = null
+        } else {
+            onCancel()
+        }
     }
 
     Scaffold(
@@ -85,15 +89,17 @@ fun FolderPickerScreen(
             TopAppBar(
                 title = { Text(currentFolderName) },
                 navigationIcon = {
-                    if (navStack.isNotEmpty()) {
-                        IconButton(onClick = {
+                    IconButton(onClick = {
+                        if (navStack.isNotEmpty()) {
                             nameStack.removeLastOrNull()
                             currentParentId = navStack.removeLastOrNull()
                             selectedFolderId = null
                             selectedFolderName = null
-                        }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        } else {
+                            onCancel()
                         }
+                    }) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 actions = {
