@@ -227,6 +227,7 @@ fun FilesScreen(navController: NavHostController) {
                                 TextButton(onClick = {
                                     val id = selectedIds.first()
                                     scope.launch {
+                                        viewModel.clearSelection()
                                         val link = app.shareRepository.generateShareLink(id)
                                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                         clipboard.setPrimaryClip(android.content.ClipData.newPlainText("share_link", link))
@@ -297,6 +298,7 @@ fun FilesScreen(navController: NavHostController) {
                     currentName = file.name,
                     onConfirm = { newName ->
                         viewModel.renameFile(file.fileId, newName)
+                        viewModel.clearSelection()
                         renameTarget = null
                     },
                     onDismiss = { renameTarget = null }

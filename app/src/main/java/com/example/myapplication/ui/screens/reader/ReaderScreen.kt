@@ -68,6 +68,7 @@ fun ReaderScreen(navController: NavController) {
     val paddingPx = with(density) { 16.dp.roundToPx() }
     val textStyle = TextStyle(fontSize = 18.sp, lineHeight = 28.sp, color = Color(0xFF1A1A1A))
 
+    // 通过by remember随时动态更改屏幕尺寸
     var containerWidth by remember { mutableIntStateOf(0) }
     var containerHeight by remember { mutableIntStateOf(0) }
     // Auto-reset when fullText changes (new file)
@@ -127,7 +128,7 @@ fun ReaderScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .onSizeChanged { containerWidth = it.width; containerHeight = it.height }
+                .onSizeChanged { containerWidth = it.width; containerHeight = it.height } //动态适配当前的屏幕尺寸
         ) {
             if (showLoading) {
                 LoadingOverlay()

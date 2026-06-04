@@ -73,10 +73,9 @@ fun FolderPickerScreen(
     }
 
     // System back button
-    BackHandler(enabled = currentParentId != null) {
-        navStack.removeLastOrNull()
+    BackHandler(enabled = navStack.isNotEmpty()) {
         nameStack.removeLastOrNull()
-        currentParentId = navStack.lastOrNull()
+        currentParentId = navStack.removeLastOrNull()
         selectedFolderId = null
         selectedFolderName = null
     }
@@ -86,11 +85,10 @@ fun FolderPickerScreen(
             TopAppBar(
                 title = { Text(currentFolderName) },
                 navigationIcon = {
-                    if (currentParentId != null) {
+                    if (navStack.isNotEmpty()) {
                         IconButton(onClick = {
-                            navStack.removeLastOrNull()
                             nameStack.removeLastOrNull()
-                            currentParentId = navStack.lastOrNull()
+                            currentParentId = navStack.removeLastOrNull()
                             selectedFolderId = null
                             selectedFolderName = null
                         }) {
