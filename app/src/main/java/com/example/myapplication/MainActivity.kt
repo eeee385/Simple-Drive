@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.mutableIntStateOf
@@ -128,10 +129,19 @@ fun MainApp() {
         onDispose { app.onDeepLinkShareId = null }
     }
 
+    // Hide bottom bar on full-screen pages (reader, share preview, folder picker)
+    val navBackStackEntry by navController.currentBackStackEntryFlow
+        .collectAsState(initial = navController.currentBackStackEntry)
+    val hideBottomBar = navBackStackEntry?.destination?.route in listOf(
+        Screen.Reader.route, Screen.SharePreview.route, Screen.FolderPicker.route,
+        Screen.RecentList.route, Screen.FileList.route
+    )
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            NavigationBar {
+            if (!hideBottomBar) {
+                NavigationBar {
                 items.forEachIndexed { index, item ->
                     NavigationBarItem(
                         selected = selectedIndex == index,
@@ -155,6 +165,7 @@ fun MainApp() {
                     )
                 }
             }
+            } // if (!hideBottomBar)
         }
     ) { innerPadding ->
         AppNavigation(

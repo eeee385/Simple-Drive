@@ -70,7 +70,6 @@ fun ReaderScreen(navController: NavController) {
 
     var containerWidth by remember { mutableIntStateOf(0) }
     var containerHeight by remember { mutableIntStateOf(0) }
-    var showBars by remember { mutableStateOf(true) }
     // Auto-reset when fullText changes (new file)
     var pages by remember(fullText) { mutableStateOf<List<PageData>>(emptyList()) }
 
@@ -95,32 +94,30 @@ fun ReaderScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-            AnimatedVisibility(visible = showBars, enter = fadeIn(), exit = fadeOut()) {
-                Column {
-                    TopAppBar(
-                        title = {
-                            Column {
-                                Text(fileName.ifEmpty { "阅读" }, maxLines = 1)
-                                if (pages.isNotEmpty()) {
-                                    Text(
-                                        "${pagerState.currentPage + 1} / ${pages.size}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            }
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+            Column {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(fileName.ifEmpty { "阅读" }, maxLines = 1)
+                            if (pages.isNotEmpty()) {
+                                Text(
+                                    "${pagerState.currentPage + 1} / ${pages.size}",
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
                         }
-                    )
-                    if (pages.isNotEmpty()) {
-                        LinearProgressIndicator(
-                            progress = { (pagerState.currentPage + 1).toFloat() / pages.size },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                        }
                     }
+                )
+                if (pages.isNotEmpty()) {
+                    LinearProgressIndicator(
+                        progress = { (pagerState.currentPage + 1).toFloat() / pages.size },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             }
         }
@@ -139,9 +136,6 @@ fun ReaderScreen(navController: NavController) {
             } else {
                 HorizontalPager(
                     state = pagerState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) { detectTapGestures { showBars = !showBars } }
                 ) { page ->
                     Box(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                         Text(text = pages.getOrNull(page)?.text ?: "", style = textStyle)
