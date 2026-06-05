@@ -167,8 +167,6 @@ private fun paginateWithStaticLayout(
     val pages = mutableListOf<PageData>()
     var currentLine = 0
     val totalLines = layout.lineCount
-
-    // Use Compose's actual line height for page calculation, not StaticLayout's
     val composeLineHeight = 28f * density
 
     while (currentLine < totalLines) {
@@ -176,7 +174,7 @@ private fun paginateWithStaticLayout(
 
         while (currentLine < totalLines) {
             val linesInPage = currentLine - pageLineStart + 1
-            if (linesInPage * composeLineHeight > pageHeightPx && currentLine > pageLineStart) break
+            if (linesInPage * composeLineHeight > pageHeightPx) break
             currentLine++
         }
 
