@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -28,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.example.myapplication.SimplePanApplication
 import com.example.myapplication.data.local.db.entity.FileEntity
 import com.example.myapplication.ui.components.LoadingOverlay
+import com.example.myapplication.ui.theme.WarmAmber
 import com.example.myapplication.util.FileTypeHelper
 import com.example.myapplication.util.TimeUtils
 import kotlinx.coroutines.Dispatchers
@@ -84,22 +87,34 @@ fun SharePreviewScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("分享文件") },
                 navigationIcon = {
                     IconButton(onClick = onDismiss) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回") }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         },
         bottomBar = {
-            BottomAppBar {
+            BottomAppBar(
+                containerColor = MaterialTheme.colorScheme.background
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     OutlinedButton(onClick = onDismiss) { Text("取消") }
-                    Button(onClick = onTransfer) { Text("转存") }
+                    Button(
+                        onClick = onTransfer,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = WarmAmber,
+                            contentColor = MaterialTheme.colorScheme.onTertiary
+                        )
+                    ) { Text("转存") }
                 }
             }
         }

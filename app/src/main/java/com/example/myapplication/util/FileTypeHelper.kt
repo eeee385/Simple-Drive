@@ -1,23 +1,33 @@
 package com.example.myapplication.util
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Collections
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Headphones
+import androidx.compose.material.icons.filled.VideoFile
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 
 object FileTypeHelper {
 
     fun getFileIcon(type: String): ImageVector = when (type) {
         "folder" -> Icons.Filled.Folder
-        "video" -> Icons.Filled.PlayArrow
-        "txt" -> Icons.Filled.Description
-        "image" -> Icons.Filled.Image
-        "audio" -> Icons.Filled.MusicNote
+        "txt" -> Icons.AutoMirrored.Filled.Article
+        "image" -> Icons.Filled.Collections
+        "video" -> Icons.Filled.VideoFile
+        "audio" -> Icons.Filled.Headphones
         else -> Icons.AutoMirrored.Filled.InsertDriveFile
+    }
+
+    fun getFileColor(type: String): Color = when (type) {
+        "folder" -> Color(0xFF0284C7)
+        "txt" -> Color(0xFF059669)
+        "image" -> Color(0xFFE11D48)
+        "video" -> Color(0xFFD97706)
+        "audio" -> Color(0xFF7C3AED)
+        else -> Color(0xFF64748B)
     }
 
     fun formatFileSize(bytes: Long): String {

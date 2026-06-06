@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,7 +32,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -66,7 +66,7 @@ fun ReaderScreen(navController: NavController) {
 
     val density = LocalDensity.current
     val paddingPx = with(density) { 16.dp.roundToPx() }
-    val textStyle = TextStyle(fontSize = 18.sp, lineHeight = 28.sp, color = Color(0xFF1A1A1A))
+    val textStyle = TextStyle(fontSize = 18.sp, lineHeight = 28.sp, color = MaterialTheme.colorScheme.onBackground)
 
     // 通过by remember随时动态更改屏幕尺寸
     var containerWidth by remember { mutableIntStateOf(0) }
@@ -94,6 +94,7 @@ fun ReaderScreen(navController: NavController) {
     val showLoading = isLoading || (fullText.isNotEmpty() && pages.isEmpty())
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Column {
                 TopAppBar(
@@ -112,12 +113,17 @@ fun ReaderScreen(navController: NavController) {
                         IconButton(onClick = { navController.popBackStack() }) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
                 )
                 if (pages.isNotEmpty()) {
                     LinearProgressIndicator(
                         progress = { (pagerState.currentPage + 1).toFloat() / pages.size },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        color = com.example.myapplication.ui.theme.WarmAmber,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
                     )
                 }
             }

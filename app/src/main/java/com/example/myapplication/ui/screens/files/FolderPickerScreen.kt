@@ -85,6 +85,7 @@ fun FolderPickerScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text(currentFolderName) },
@@ -106,7 +107,10 @@ fun FolderPickerScreen(
                     TextButton(onClick = { onFolderSelected(selectedFolderId) }) {
                         Text("确定")
                     }
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { innerPadding ->

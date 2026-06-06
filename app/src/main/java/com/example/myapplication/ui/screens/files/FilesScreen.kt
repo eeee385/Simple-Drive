@@ -6,9 +6,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,21 +23,24 @@ import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -155,6 +160,9 @@ fun FilesScreen(navController: NavHostController) {
                         else currentFolderName
                     )
                 },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                ),
                 navigationIcon = {
                     if (isSelectionMode) {
                         IconButton(onClick = { viewModel.clearSelection() }) {
@@ -187,6 +195,7 @@ fun FilesScreen(navController: NavHostController) {
         bottomBar = {
             if (isSelectionMode) {
                 BottomAppBar(
+                    containerColor = MaterialTheme.colorScheme.background,
                     actions = {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -245,8 +254,12 @@ fun FilesScreen(navController: NavHostController) {
         },
         floatingActionButton = {
             if (!isSelectionMode) {
-                FloatingActionButton(onClick = { filePickerLauncher.launch("*/*") }) {
-                    Icon(Icons.Filled.Add, contentDescription = "上传")
+                FloatingActionButton(
+                    onClick = { filePickerLauncher.launch("*/*") },
+                    containerColor = com.example.myapplication.ui.theme.WarmAmber,
+                    contentColor = MaterialTheme.colorScheme.onTertiary
+                ) {
+                    Icon(Icons.Filled.Upload, contentDescription = "上传")
                 }
             }
         },
@@ -265,7 +278,16 @@ fun FilesScreen(navController: NavHostController) {
             modifier = Modifier.padding(innerPadding).fillMaxSize()
         ) {
             if (files.isEmpty() && !isLoading) {
-                EmptyState(icon = Icons.Filled.Folder, message = "暂无文件")
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    EmptyState(icon = Icons.Filled.Folder, message = "暂无文件", modifier = Modifier.height(160.dp))
+                    TextButton(onClick = { filePickerLauncher.launch("*/*") }) {
+                        Text("上传第一个文件")
+                    }
+                }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(files, key = { it.fileId }) { file ->
