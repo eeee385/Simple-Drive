@@ -9,7 +9,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.myapplication.ui.screens.files.FilesScreen
 import com.example.myapplication.ui.screens.files.FolderPickerScreen
-import com.example.myapplication.ui.screens.pan.PanScreen
 import com.example.myapplication.ui.screens.pan.RecentListScreen
 import com.example.myapplication.ui.screens.pan.SharePreviewScreen
 import com.example.myapplication.ui.screens.reader.ReaderScreen
@@ -21,14 +20,11 @@ fun AppNavigation(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Pan.route,
+        startDestination = Screen.Empty.route,
         modifier = modifier
     ) {
-        composable(Screen.Pan.route) {
-            PanScreen(navController = navController)
-        }
-        composable(Screen.Files.route) {
-            FilesScreen(navController = navController)
+        composable(Screen.Empty.route) {
+            // Placeholder — main tabs are rendered by the pager
         }
         composable(
             route = Screen.FileList.route,
