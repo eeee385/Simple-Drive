@@ -30,6 +30,9 @@ class FileRepository(context: Context) {
     fun getFilesByParentId(parentId: String?): Flow<List<FileEntity>> =
         fileDao.getFilesByParentId(parentId)
 
+    fun getAllFiles(): Flow<List<FileEntity>> =
+        fileDao.getAllFiles()
+
     suspend fun getFileById(fileId: String): FileEntity? =
         fileDao.getFileById(fileId)
 

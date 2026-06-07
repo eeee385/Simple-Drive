@@ -13,6 +13,9 @@ interface FileDao {
     @Query("SELECT * FROM files WHERE parentId IS :parentId OR (parentId IS NULL AND :parentId IS NULL)")
     fun getFilesByParentId(parentId: String?): Flow<List<FileEntity>>
 
+    @Query("SELECT * FROM files")
+    fun getAllFiles(): Flow<List<FileEntity>>
+
     @Query("SELECT * FROM files WHERE fileId = :fileId")
     suspend fun getFileById(fileId: String): FileEntity?
 

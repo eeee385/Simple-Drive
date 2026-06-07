@@ -15,12 +15,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+
+enum class FilterType { ALL, IMAGE, VIDEO, DOC }
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class FilesViewModel(
@@ -33,10 +36,34 @@ class FilesViewModel(
 
     private val navStack = ArrayDeque<String?>()
 
-    val files: StateFlow<List<FileEntity>> = _currentParentId
+    private val rawFiles: StateFlow<List<FileEntity>> = _currentParentId
         .flatMapLatest { parentId -> fileRepository.getFilesByParentId(parentId) }
         .map { list -> list.sortedWith(fileSortComparator) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val allFiles: StateFlow<List<FileEntity>> = fileRepository.getAllFiles()
+        .map { list -> list.sortedWith(fileSortComparator) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _filterType = MutableStateFlow(FilterType.ALL)
+    val filterType: StateFlow<FilterType> = _filterType.asStateFlow()
+
+    val files: StateFlow<List<FileEntity>> = combine(
+        rawFiles, allFiles, _filterType, _currentParentId
+    ) { folderFiles, all, filter, parentId ->
+        val source = if (parentId == null && filter != FilterType.ALL) all else folderFiles
+        when (filter) {
+            FilterType.ALL -> source
+            FilterType.IMAGE -> source.filter { it.type == "image" }
+            FilterType.VIDEO -> source.filter { it.type == "video" }
+            FilterType.DOC -> source.filter { it.type == "txt" }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setFilter(type: FilterType) {
+        _filterType.value = type
+        clearSelection()
+    }
 
     companion object {
         private val typeOrder = mapOf(

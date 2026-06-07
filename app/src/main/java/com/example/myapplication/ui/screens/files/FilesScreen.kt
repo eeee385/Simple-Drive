@@ -4,36 +4,48 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.outlined.CreateNewFolder
+import androidx.compose.material.icons.outlined.Upload
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -42,6 +54,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -88,6 +102,7 @@ fun FilesScreen(navController: NavHostController) {
     val selectedIds by viewModel.selectedFileIds.collectAsState()
     val snackbarMessage by viewModel.snackbarMessage.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+    val currentFilter by viewModel.filterType.collectAsState()
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -103,17 +118,18 @@ fun FilesScreen(navController: NavHostController) {
     var renameTarget by remember { mutableStateOf<FileEntity?>(null) }
     var deleteTargets by remember { mutableStateOf<List<String>?>(null) }
     var showCreateFolder by remember { mutableStateOf(false) }
+    var showActionSheet by remember { mutableStateOf(false) }
 
     // Pending move state (must survive navigation)
     var pendingMoveIds by rememberSaveable { mutableStateOf<List<String>?>(null) }
 
-    var currentFolderName by remember { mutableStateOf("文件") }
+    var currentFolderName by remember { mutableStateOf("") }
 
     LaunchedEffect(currentParentId) {
         val parentId = currentParentId
-        currentFolderName = if (parentId == null) "文件" else {
+        currentFolderName = if (parentId == null) "" else {
             withContext(Dispatchers.IO) {
-                app.fileRepository.getFileById(parentId)?.name ?: "文件"
+                app.fileRepository.getFileById(parentId)?.name ?: ""
             }
         }
     }
@@ -151,46 +167,41 @@ fun FilesScreen(navController: NavHostController) {
         viewModel.clearSelection()
     }
 
+    val showFullTopBar = isSelectionMode || currentParentId != null
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        if (isSelectionMode) "已选 ${selectedIds.size} 项"
-                        else currentFolderName
-                    )
-                },
-                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                ),
-                navigationIcon = {
-                    if (isSelectionMode) {
-                        IconButton(onClick = { viewModel.clearSelection() }) {
-                            Icon(Icons.Filled.Close, contentDescription = "取消选择")
+            if (showFullTopBar) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            if (isSelectionMode) "已选 ${selectedIds.size} 项"
+                            else currentFolderName
+                        )
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    ),
+                    navigationIcon = {
+                        if (isSelectionMode) {
+                            IconButton(onClick = { viewModel.clearSelection() }) {
+                                Icon(Icons.Filled.Close, contentDescription = "取消选择")
+                            }
+                        } else {
+                            IconButton(onClick = { viewModel.navigateBack() }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
+                            }
                         }
-                    } else if (currentParentId != null) {
-                        IconButton(onClick = { viewModel.navigateBack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                        }
-                    }
-                },
-                actions = {
-                    if (isSelectionMode) {
-                        IconButton(onClick = { viewModel.selectAll() }) {
-                            Icon(Icons.Filled.SelectAll, contentDescription = "全选")
-                        }
-                    } else {
-                        IconButton(onClick = { showCreateFolder = true }) {
-                            Icon(Icons.Filled.CreateNewFolder, contentDescription = "新建文件夹")
-                        }
-                        IconButton(onClick = {
-                            scope.launch { app.fileRepository.syncFromMockData(context) }
-                        }) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "刷新")
+                    },
+                    actions = {
+                        if (isSelectionMode) {
+                            IconButton(onClick = { viewModel.selectAll() }) {
+                                Icon(Icons.Filled.SelectAll, contentDescription = "全选")
+                            }
                         }
                     }
-                }
-            )
+                )
+            }
         },
         bottomBar = {
             if (isSelectionMode) {
@@ -255,66 +266,76 @@ fun FilesScreen(navController: NavHostController) {
         floatingActionButton = {
             if (!isSelectionMode) {
                 FloatingActionButton(
-                    onClick = { filePickerLauncher.launch("*/*") },
+                    onClick = { showActionSheet = true },
                     containerColor = com.example.myapplication.ui.theme.WarmAmber,
                     contentColor = MaterialTheme.colorScheme.onTertiary
                 ) {
-                    Icon(Icons.Filled.Upload, contentDescription = "上传")
+                    Icon(Icons.Filled.Add, contentDescription = "添加")
                 }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
     ) { innerPadding ->
-        var isRefreshing by remember { mutableStateOf(false) }
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = {
-                scope.launch {
-                    isRefreshing = true
-                    app.fileRepository.syncFromMockData(context)
-                    isRefreshing = false
-                }
-            },
-            modifier = Modifier.padding(innerPadding).fillMaxSize()
-        ) {
-            if (files.isEmpty() && !isLoading) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    EmptyState(icon = Icons.Filled.Folder, message = "暂无文件", modifier = Modifier.height(160.dp))
-                    TextButton(onClick = { filePickerLauncher.launch("*/*") }) {
-                        Text("上传第一个文件")
-                    }
-                }
-            } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(files, key = { it.fileId }) { file ->
-                        FileListItem(
-                            file = file,
-                            isSelected = file.fileId in selectedIds,
-                            isSelectionMode = isSelectionMode,
-                            onClick = {
-                                if (isSelectionMode) {
-                                    viewModel.toggleSelection(file.fileId)
-                                } else {
-                                    onFileClick(file, viewModel, navController, context)
-                                }
-                            },
-                            onLongPress = {
-                                if (!isSelectionMode) {
-                                    viewModel.toggleSelection(file.fileId)
-                                }
-                            }
-                        )
-                    }
-                }
+        Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            // Filter chips — only at root level
+            if (currentParentId == null) {
+                FilterChipRow(
+                    currentFilter = currentFilter,
+                    onFilterSelected = { viewModel.setFilter(it) }
+                )
             }
 
-            if (isLoading) LoadingOverlay()
+            var isRefreshing by remember { mutableStateOf(false) }
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = {
+                    scope.launch {
+                        isRefreshing = true
+                        app.fileRepository.syncFromMockData(context)
+                        isRefreshing = false
+                    }
+                },
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (files.isEmpty() && !isLoading) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        EmptyState(icon = Icons.Filled.Folder, message = "暂无文件", modifier = Modifier.height(160.dp))
+                        TextButton(onClick = { filePickerLauncher.launch("*/*") }) {
+                            Text("上传第一个文件")
+                        }
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(files, key = { it.fileId }) { file ->
+                            FileListItem(
+                                file = file,
+                                isSelected = file.fileId in selectedIds,
+                                isSelectionMode = isSelectionMode,
+                                onClick = {
+                                    if (isSelectionMode) {
+                                        viewModel.toggleSelection(file.fileId)
+                                    } else {
+                                        onFileClick(file, viewModel, navController, context)
+                                    }
+                                },
+                                onLongPress = {
+                                    if (!isSelectionMode) {
+                                        viewModel.toggleSelection(file.fileId)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
 
-            // Rename dialog
+                if (isLoading) LoadingOverlay()
+            }
+
+            // Dialogs
             renameTarget?.let { file ->
                 RenameDialog(
                     currentName = file.name,
@@ -327,7 +348,6 @@ fun FilesScreen(navController: NavHostController) {
                 )
             }
 
-            // Delete dialog
             deleteTargets?.let { ids ->
                 val count = ids.size
                 DeleteConfirmDialog(
@@ -340,7 +360,6 @@ fun FilesScreen(navController: NavHostController) {
                 )
             }
 
-            // Create folder dialog
             if (showCreateFolder) {
                 CreateFolderDialog(
                     onConfirm = { folderName ->
@@ -349,6 +368,120 @@ fun FilesScreen(navController: NavHostController) {
                     },
                     onDismiss = { showCreateFolder = false }
                 )
+            }
+        }
+    }
+    // Action bottom sheet
+    if (showActionSheet) {
+        val sheetState = rememberModalBottomSheetState()
+        ModalBottomSheet(
+            onDismissRequest = { showActionSheet = false },
+            sheetState = sheetState,
+            containerColor = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+        ) {
+            Column(modifier = Modifier.padding(bottom = 32.dp)) {
+                Text(
+                    "新建",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+                )
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                ListItem(
+                    headlineContent = { Text("新建文件夹") },
+                    leadingContent = {
+                        Icon(
+                            Icons.Outlined.CreateNewFolder,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        showActionSheet = false
+                        showCreateFolder = true
+                    }
+                )
+                ListItem(
+                    headlineContent = { Text("上传文件") },
+                    leadingContent = {
+                        Icon(
+                            Icons.Outlined.Upload,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    },
+                    modifier = Modifier.clickable {
+                        showActionSheet = false
+                        filePickerLauncher.launch("*/*")
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FilterChipRow(
+    currentFilter: FilterType,
+    onFilterSelected: (FilterType) -> Unit
+) {
+    val items = listOf(FilterType.ALL, FilterType.IMAGE, FilterType.VIDEO, FilterType.DOC)
+    val labels = listOf("全部", "图片", "视频", "文档")
+    val selectedIndex = items.indexOf(currentFilter)
+
+    val indicatorOffset by animateFloatAsState(
+        targetValue = selectedIndex.toFloat(),
+        animationSpec = androidx.compose.animation.core.tween(250, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+        label = "filterIndicator"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clip(RoundedCornerShape(28.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val segmentWidth = maxWidth / 4
+            val indicatorWidth = segmentWidth - 8.dp
+
+            // Sliding indicator
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = segmentWidth * indicatorOffset + 4.dp)
+                    .width(indicatorWidth)
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+
+            // Labels
+            Row(modifier = Modifier.fillMaxWidth()) {
+                items.forEachIndexed { index, filter ->
+                    val isSelected = index == selectedIndex
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(42.dp)
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+                            ) { onFilterSelected(filter) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            labels[index],
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.onPrimary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal
+                        )
+                    }
+                }
             }
         }
     }
