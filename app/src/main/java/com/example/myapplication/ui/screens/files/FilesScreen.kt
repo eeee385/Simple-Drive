@@ -33,15 +33,13 @@ import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.outlined.CreateNewFolder
-import androidx.compose.material.icons.outlined.Upload
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -70,6 +68,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.myapplication.R
 import com.example.myapplication.SimplePanApplication
 import com.example.myapplication.data.local.db.entity.FileEntity
 import com.example.myapplication.ui.components.EmptyState
@@ -380,41 +379,57 @@ fun FilesScreen(navController: NavHostController) {
             containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
         ) {
-            Column(modifier = Modifier.padding(bottom = 32.dp)) {
-                Text(
-                    "新建",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-                )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                ListItem(
-                    headlineContent = { Text("新建文件夹") },
-                    leadingContent = {
-                        Icon(
-                            Icons.Outlined.CreateNewFolder,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    },
-                    modifier = Modifier.clickable {
-                        showActionSheet = false
-                        showCreateFolder = true
-                    }
-                )
-                ListItem(
-                    headlineContent = { Text("上传文件") },
-                    leadingContent = {
-                        Icon(
-                            Icons.Outlined.Upload,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    },
-                    modifier = Modifier.clickable {
-                        showActionSheet = false
-                        filePickerLauncher.launch("*/*")
-                    }
-                )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 20.dp, bottom = 36.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            showActionSheet = false
+                            showCreateFolder = true
+                        }
+                        .padding(horizontal = 32.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_folder),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "新建文件夹",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable {
+                            showActionSheet = false
+                            filePickerLauncher.launch("*/*")
+                        }
+                        .padding(horizontal = 32.dp, vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_add_circle),
+                        contentDescription = null,
+                        tint = Color.Unspecified,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "上传文件",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
         }
     }
