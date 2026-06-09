@@ -194,8 +194,9 @@ fun FilesScreen(navController: NavHostController) {
                     },
                     actions = {
                         if (isSelectionMode) {
-                            IconButton(onClick = { viewModel.selectAll() }) {
-                                Icon(Icons.Filled.SelectAll, contentDescription = "全选")
+                            val allSelected = selectedIds.size == files.size && files.isNotEmpty()
+                            TextButton(onClick = { viewModel.selectAll() }) {
+                                Text(if (allSelected) "取消全选" else "全选")
                             }
                         }
                     }
@@ -277,7 +278,7 @@ fun FilesScreen(navController: NavHostController) {
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             // Filter chips — only at root level
-            if (currentParentId == null) {
+            if (currentParentId == null && !isSelectionMode) {
                 FilterChipRow(
                     currentFilter = currentFilter,
                     onFilterSelected = { viewModel.setFilter(it) }
