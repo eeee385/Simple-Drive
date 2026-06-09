@@ -184,7 +184,7 @@ fun FilesScreen(
     // Track folder path for breadcrumb — using SideEffect for same-frame update
     val vmFolderName by viewModel.currentFolderName.collectAsState()
     currentFolderName = if (currentParentId == null) "" else vmFolderName
-    folderPath = if (currentParentId == null) emptyList() else viewModel.getFolderPath()
+    folderPath = if (currentParentId == null) emptyList() else listOf("我的网盘") + viewModel.getFolderPath()
     SideEffect {
         onFolderChanged?.invoke(currentParentId != null, currentFolderName) { viewModel.navigateBack() }
     }
@@ -207,7 +207,7 @@ fun FilesScreen(
                                     val id = selectedIds.first()
                                     renameTarget = files.find { it.fileId == id }
                                 }) {
-                                    Icon(Icons.Filled.CreateNewFolder, contentDescription = null)
+                                    Icon(painterResource(R.drawable.ic_rename), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
                                     Text("重命名", modifier = Modifier.padding(start = 4.dp))
                                 }
                             }
@@ -220,14 +220,14 @@ fun FilesScreen(
                                 )
                                 navController.navigate(com.example.myapplication.ui.navigation.Screen.FolderPicker.createRoute())
                             }) {
-                                Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = null)
+                                Icon(painterResource(R.drawable.ic_move), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
                                 Text("移动", modifier = Modifier.padding(start = 4.dp))
                             }
                             // 删除
                             TextButton(onClick = {
                                 deleteTargets = selectedIds.toList()
                             }) {
-                                Icon(Icons.Filled.Delete, contentDescription = null)
+                                Icon(painterResource(R.drawable.ic_delete), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
                                 Text("删除", modifier = Modifier.padding(start = 4.dp))
                             }
                             // 分享 - only when single file selected
@@ -244,7 +244,7 @@ fun FilesScreen(
                                         snackbarHostState.currentSnackbarData?.dismiss()
                                     }
                                 }) {
-                                    Icon(Icons.Filled.Share, contentDescription = null)
+                                    Icon(painterResource(R.drawable.ic_share), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
                                     Text("分享", modifier = Modifier.padding(start = 4.dp))
                                 }
                             }
@@ -467,10 +467,11 @@ private fun BreadcrumbRow(path: List<String>) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .height(42.dp)
             .clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+            .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         path.forEachIndexed { index, name ->

@@ -51,6 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -158,40 +159,47 @@ fun MainApp() {
     val isSubScreen = currentRoute != null && currentRoute != Screen.Empty.route
     val hideTabBar = currentRoute in listOf(
         Screen.Reader.route, Screen.SharePreview.route, Screen.FolderPicker.route,
-        Screen.RecentList.route, Screen.FileList.route
+        Screen.FileList.route
     )
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-            Crossfade(targetState = isSubScreen) { onSubScreen ->
-                if (!onSubScreen) {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        // Top area: tabs, selection header, or subfolder header
-                        if (!hideTabBar) {
-                            when {
-                                isFilesSelecting && selectedIndex == 1 -> SelectionHeader(
-                                    selectCount = filesSelectCount,
-                                    allSelected = isFilesAllSelected,
-                                    onDismiss = { filesDismissAction?.invoke() },
-                                    onToggleAll = { filesToggleAllAction?.invoke() }
-                                )
-                                isInSubFolder && selectedIndex == 1 -> SubFolderHeader(
-                                    folderName = subFolderName,
-                                    onBack = { filesNavigateBack?.invoke() }
-                                )
-                                else -> TopTabBar(
-                                    selectedIndex = selectedIndex,
-                                    onTabClick = { index ->
-                                        selectedIndex = index
-                                        scope.launch { pagerState.animateScrollToPage(index) }
-                                    }
-                                )
-                            }
+        Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            // Header area — shown when not on full-screen pages
+            if (!hideTabBar) {
+                if (isSubScreen && currentRoute?.startsWith("recent_list") == true) {
+                    val listType = navBackStackEntry?.arguments?.getString("listType") ?: "browse"
+                    val title = if (listType == "browse") "最近浏览" else "最近转存"
+                    SubPageHeader(title = title, onBack = { navController.popBackStack() }, fontSize = 22.sp)
+                } else if (isFilesSelecting && selectedIndex == 1) {
+                    SelectionHeader(
+                        selectCount = filesSelectCount,
+                        allSelected = isFilesAllSelected,
+                        onDismiss = { filesDismissAction?.invoke() },
+                        onToggleAll = { filesToggleAllAction?.invoke() }
+                    )
+                } else if (isInSubFolder && selectedIndex == 1) {
+                    SubFolderHeader(
+                        folderName = subFolderName,
+                        onBack = { filesNavigateBack?.invoke() }
+                    )
+                } else if (!isSubScreen) {
+                    TopTabBar(
+                        selectedIndex = selectedIndex,
+                        onTabClick = { index ->
+                            selectedIndex = index
+                            scope.launch { pagerState.animateScrollToPage(index) }
                         }
+                    )
+                }
+            }
 
-                        HorizontalPager(
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                Crossfade(targetState = isSubScreen) { onSubScreen ->
+                    if (!onSubScreen) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            HorizontalPager(
                             state = pagerState,
                             modifier = Modifier.fillMaxSize(),
                             userScrollEnabled = !isFilesSelecting && !isInSubFolder && !isSubScreen
@@ -219,10 +227,11 @@ fun MainApp() {
                 }
             }
 
-            AppNavigation(
-                navController = navController,
-                modifier = Modifier.fillMaxSize()
-            )
+                AppNavigation(
+                    navController = navController,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
@@ -241,7 +250,7 @@ private fun SelectionHeader(
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(modifier = Modifier.width(48.dp), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.width(88.dp), contentAlignment = Alignment.CenterStart) {
             IconButton(onClick = onDismiss) {
                 Icon(
                     imageVector = Icons.Filled.Close,
@@ -273,6 +282,38 @@ private fun SelectionHeader(
 }
 
 @Composable
+private fun SubPageHeader(
+    title: String,
+    onBack: () -> Unit,
+    fontSize: TextUnit = MaterialTheme.typography.titleMedium.fontSize
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.width(48.dp)) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "返回"
+                )
+            }
+        }
+        Text(
+            title,
+            fontSize = fontSize,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.width(48.dp))
+    }
+}
+
+@Composable
 private fun SubFolderHeader(
     folderName: String,
     onBack: () -> Unit
@@ -284,11 +325,13 @@ private fun SubFolderHeader(
             .padding(horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onBack) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "返回"
-            )
+        Box(modifier = Modifier.width(48.dp)) {
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "返回"
+                )
+            }
         }
         Text(
             folderName,
@@ -297,7 +340,7 @@ private fun SubFolderHeader(
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.width(48.dp))
+        Box(modifier = Modifier.width(48.dp))
     }
 }
 

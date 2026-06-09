@@ -73,30 +73,13 @@ fun RecentListScreen(
         }
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text(title) },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
-            )
-        }
-    ) { innerPadding ->
-        if (items.isEmpty()) {
-            EmptyState(
-                icon = Icons.Filled.History,
-                message = "暂无记录",
-                modifier = Modifier.padding(innerPadding)
-            )
-        } else {
-            LazyColumn(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+    if (items.isEmpty()) {
+        EmptyState(
+            icon = Icons.Filled.History,
+            message = "暂无记录"
+        )
+    } else {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(items, key = { it.id + listType }) { item ->
                     Row(
                         modifier = Modifier
@@ -139,5 +122,5 @@ fun RecentListScreen(
                 }
             }
         }
-    }
 }
+
