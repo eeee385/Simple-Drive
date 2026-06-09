@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,6 +58,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -86,7 +88,8 @@ import kotlinx.coroutines.withContext
 @Composable
 fun FilesScreen(
     navController: NavHostController,
-    onSelectionChanged: ((Boolean, Int, Boolean, () -> Unit, () -> Unit) -> Unit)? = null
+    onSelectionChanged: ((Boolean, Int, Boolean, () -> Unit, () -> Unit) -> Unit)? = null,
+    onFolderChanged: ((isInSubFolder: Boolean, folderName: String, onBack: () -> Unit) -> Unit)? = null
 ) {
     val app = LocalContext.current.applicationContext as SimplePanApplication
     val viewModel: FilesViewModel = viewModel(
@@ -97,7 +100,10 @@ fun FilesScreen(
     val navParentId = navController.currentBackStackEntry?.arguments?.getString("parentId")?.takeIf { it != "root" }
     LaunchedEffect(navParentId) {
         if (navParentId != null) {
-            viewModel.navigateToFolder(navParentId)
+            val name = withContext(Dispatchers.IO) {
+                app.fileRepository.getFileById(navParentId)?.name ?: ""
+            }
+            viewModel.navigateToFolder(navParentId, name)
         }
     }
 
@@ -138,15 +144,7 @@ fun FilesScreen(
     var pendingMoveIds by rememberSaveable { mutableStateOf<List<String>?>(null) }
 
     var currentFolderName by remember { mutableStateOf("") }
-
-    LaunchedEffect(currentParentId) {
-        val parentId = currentParentId
-        currentFolderName = if (parentId == null) "" else {
-            withContext(Dispatchers.IO) {
-                app.fileRepository.getFileById(parentId)?.name ?: ""
-            }
-        }
-    }
+    var folderPath by remember { mutableStateOf<List<String>>(emptyList()) }
 
     // Listen for folder picker result from savedStateHandle
     val backStackEntryId = navController.currentBackStackEntry?.id
@@ -183,43 +181,16 @@ fun FilesScreen(
         viewModel.clearSelection()
     }
 
-    val showFullTopBar = currentParentId != null
+    // Track folder path for breadcrumb — using SideEffect for same-frame update
+    val vmFolderName by viewModel.currentFolderName.collectAsState()
+    currentFolderName = if (currentParentId == null) "" else vmFolderName
+    folderPath = if (currentParentId == null) emptyList() else viewModel.getFolderPath()
+    SideEffect {
+        onFolderChanged?.invoke(currentParentId != null, currentFolderName) { viewModel.navigateBack() }
+    }
 
     Scaffold(
-        topBar = {
-            if (showFullTopBar) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            if (isSelectionMode) "已选 ${selectedIds.size} 项"
-                            else currentFolderName
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background
-                    ),
-                    navigationIcon = {
-                        if (isSelectionMode) {
-                            IconButton(onClick = { viewModel.clearSelection() }) {
-                                Icon(Icons.Filled.Close, contentDescription = "取消选择")
-                            }
-                        } else {
-                            IconButton(onClick = { viewModel.navigateBack() }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
-                            }
-                        }
-                    },
-                    actions = {
-                        if (isSelectionMode) {
-                            val allSelected = selectedIds.size == files.size && files.isNotEmpty()
-                            TextButton(onClick = { viewModel.selectAll() }) {
-                                Text(if (allSelected) "取消全选" else "全选")
-                            }
-                        }
-                    }
-                )
-            }
-        },
+        topBar = { },
         bottomBar = {
             if (isSelectionMode) {
                 BottomAppBar(
@@ -294,7 +265,6 @@ fun FilesScreen(
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             Column(modifier = Modifier.fillMaxSize()) {
-            // Filter chips — only at root level
             if (currentParentId == null) {
                 Box(modifier = Modifier.alpha(if (isSelectionMode) 0.4f else 1f)) {
                     FilterChipRow(
@@ -302,6 +272,8 @@ fun FilesScreen(
                         onFilterSelected = { if (!isSelectionMode) viewModel.setFilter(it) }
                     )
                 }
+            } else if (folderPath.isNotEmpty()) {
+                BreadcrumbRow(folderPath)
             }
 
             var isRefreshing by remember { mutableStateOf(false) }
@@ -491,6 +463,36 @@ fun FilesScreen(
 }
 
 @Composable
+private fun BreadcrumbRow(path: List<String>) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        path.forEachIndexed { index, name ->
+            if (index > 0) {
+                Text(
+                    " > ",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = if (index == path.lastIndex) FontWeight.Bold else FontWeight.Normal,
+                color = if (index == path.lastIndex) MaterialTheme.colorScheme.onBackground
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
 private fun FilterChipRow(
     currentFilter: FilterType,
     onFilterSelected: (FilterType) -> Unit
@@ -564,7 +566,7 @@ private fun onFileClick(
     context: android.content.Context
 ) {
     when (file.type) {
-        "folder" -> viewModel.navigateToFolder(file.fileId)
+        "folder" -> viewModel.navigateToFolder(file.fileId, file.name)
         "txt" -> {
             viewModel.recordBrowse(file.fileId)
             navController.navigate(Screen.Reader.createRoute(file.fileId))

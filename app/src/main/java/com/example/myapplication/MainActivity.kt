@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -49,6 +50,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
@@ -127,6 +129,11 @@ fun MainApp() {
     var filesDismissAction by remember { mutableStateOf<(() -> Unit)?>(null) }
     var filesToggleAllAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
+    // Files tab folder state
+    var isInSubFolder by remember { mutableStateOf(false) }
+    var subFolderName by remember { mutableStateOf("") }
+    var filesNavigateBack by remember { mutableStateOf<(() -> Unit)?>(null) }
+
     val context = LocalContext.current
     LaunchedEffect(Unit) {
         com.example.myapplication.util.InitialDataLoader.initialize(context)
@@ -161,17 +168,20 @@ fun MainApp() {
             Crossfade(targetState = isSubScreen) { onSubScreen ->
                 if (!onSubScreen) {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        // Top tab indicator or selection header
+                        // Top area: tabs, selection header, or subfolder header
                         if (!hideTabBar) {
-                            if (isFilesSelecting && selectedIndex == 1) {
-                                SelectionHeader(
+                            when {
+                                isFilesSelecting && selectedIndex == 1 -> SelectionHeader(
                                     selectCount = filesSelectCount,
                                     allSelected = isFilesAllSelected,
                                     onDismiss = { filesDismissAction?.invoke() },
                                     onToggleAll = { filesToggleAllAction?.invoke() }
                                 )
-                            } else {
-                                TopTabBar(
+                                isInSubFolder && selectedIndex == 1 -> SubFolderHeader(
+                                    folderName = subFolderName,
+                                    onBack = { filesNavigateBack?.invoke() }
+                                )
+                                else -> TopTabBar(
                                     selectedIndex = selectedIndex,
                                     onTabClick = { index ->
                                         selectedIndex = index
@@ -184,7 +194,7 @@ fun MainApp() {
                         HorizontalPager(
                             state = pagerState,
                             modifier = Modifier.fillMaxSize(),
-                            userScrollEnabled = !isFilesSelecting
+                            userScrollEnabled = !isFilesSelecting && !isInSubFolder && !isSubScreen
                         ) { page ->
                             when (page) {
                                 0 -> PanScreen(navController = navController)
@@ -196,6 +206,11 @@ fun MainApp() {
                                         isFilesAllSelected = allSelected
                                         filesDismissAction = dismiss
                                         filesToggleAllAction = toggleAll
+                                    },
+                                    onFolderChanged = { inSubFolder, name, onBack ->
+                                        isInSubFolder = inSubFolder
+                                        subFolderName = name
+                                        filesNavigateBack = onBack
                                     }
                                 )
                             }
@@ -254,6 +269,35 @@ private fun SelectionHeader(
                 Text(if (allSelected) "取消全选" else "全选")
             }
         }
+    }
+}
+
+@Composable
+private fun SubFolderHeader(
+    folderName: String,
+    onBack: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "返回"
+            )
+        }
+        Text(
+            folderName,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.weight(1f),
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.width(48.dp))
     }
 }
 

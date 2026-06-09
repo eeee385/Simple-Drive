@@ -36,6 +36,10 @@ class FilesViewModel(
 
     private val navStack = ArrayDeque<String?>()
 
+    private val folderNameStack = ArrayDeque<String>()
+    private val _currentFolderName = MutableStateFlow("")
+    val currentFolderName: StateFlow<String> = _currentFolderName.asStateFlow()
+
     private val rawFiles: StateFlow<List<FileEntity>> = _currentParentId
         .flatMapLatest { parentId -> fileRepository.getFilesByParentId(parentId) }
         .map { list -> list.sortedWith(fileSortComparator) }
@@ -126,17 +130,29 @@ class FilesViewModel(
         _selectedFileIds.value = emptySet()
     }
 
-    fun navigateToFolder(parentId: String) {
+    fun navigateToFolder(parentId: String, folderName: String) {
         clearSelection()
         navStack.addLast(_currentParentId.value)
+        folderNameStack.addLast(_currentFolderName.value)
         _currentParentId.value = parentId
+        _currentFolderName.value = folderName
     }
 
     fun navigateBack(): Boolean {
         if (navStack.isEmpty()) return false
         clearSelection()
         _currentParentId.value = navStack.removeLast()
+        _currentFolderName.value = folderNameStack.removeLastOrNull() ?: ""
         return true
+    }
+
+    fun getFolderPath(): List<String> {
+        val path = mutableListOf<String>()
+        path.addAll(folderNameStack.filter { it.isNotEmpty() })
+        if (_currentFolderName.value.isNotEmpty()) {
+            path.add(_currentFolderName.value)
+        }
+        return path
     }
 
     fun deleteSelectedFiles() {
