@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -46,7 +47,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
@@ -70,6 +70,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -140,34 +141,20 @@ fun FilesScreen(
     var showCreateFolder by remember { mutableStateOf(false) }
     var showActionSheet by remember { mutableStateOf(false) }
 
-    // Pending move state (must survive navigation)
-    var pendingMoveIds by rememberSaveable { mutableStateOf<List<String>?>(null) }
+    // Pending move state
+    var pendingMoveIds by remember { mutableStateOf<List<String>?>(null) }
+    var showMoveSheet by remember { mutableStateOf(false) }
 
     var currentFolderName by remember { mutableStateOf("") }
     var folderPath by remember { mutableStateOf<List<String>>(emptyList()) }
 
-    // Listen for folder picker result from savedStateHandle
-    val backStackEntryId = navController.currentBackStackEntry?.id
-    LaunchedEffect(backStackEntryId) {
-        // When returning from FolderPicker, check for result
-        val handle = navController.currentBackStackEntry?.savedStateHandle
-        val result = handle?.get<String>("picker_result")
-        if (result != null) {
-            val ids = pendingMoveIds
-            if (ids != null) {
-                viewModel.moveSelectedFiles(if (result == "root") null else result)
-                pendingMoveIds = null
-            }
-            handle.remove<String>("picker_result")
-        }
-    }
+    // Move action handler — called directly from FolderPicker
+    var doMoveAction by remember { mutableStateOf<((String?) -> Unit)?>(null) }
 
     // Snackbar observer
     LaunchedEffect(snackbarMessage) {
         snackbarMessage?.let { msg ->
-            scope.launch { snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Indefinite) }
-            kotlinx.coroutines.delay(2000)
-            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Short)
             viewModel.clearSnackbar()
         }
     }
@@ -197,55 +184,39 @@ fun FilesScreen(
                     containerColor = MaterialTheme.colorScheme.background,
                     actions = {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // 重命名 - only when single file selected
                             if (selectedIds.size == 1) {
-                                TextButton(onClick = {
+                                ActionChip(R.drawable.ic_rename, "重命名") {
                                     val id = selectedIds.first()
                                     renameTarget = files.find { it.fileId == id }
-                                }) {
-                                    Icon(painterResource(R.drawable.ic_rename), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
-                                    Text("重命名", modifier = Modifier.padding(start = 4.dp))
                                 }
                             }
                             // 移动
-                            TextButton(onClick = {
+                            ActionChip(R.drawable.ic_move, "移动") {
                                 pendingMoveIds = selectedIds.toList()
-                                navController.currentBackStackEntry?.savedStateHandle?.set(
-                                    "move_ids",
-                                    selectedIds.toList()
-                                )
-                                navController.navigate(com.example.myapplication.ui.navigation.Screen.FolderPicker.createRoute())
-                            }) {
-                                Icon(painterResource(R.drawable.ic_move), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
-                                Text("移动", modifier = Modifier.padding(start = 4.dp))
+                                showMoveSheet = true
                             }
                             // 删除
-                            TextButton(onClick = {
+                            ActionChip(R.drawable.ic_delete, "删除") {
                                 deleteTargets = selectedIds.toList()
-                            }) {
-                                Icon(painterResource(R.drawable.ic_delete), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
-                                Text("删除", modifier = Modifier.padding(start = 4.dp))
                             }
                             // 分享 - only when single file selected
                             if (selectedIds.size == 1) {
-                                TextButton(onClick = {
+                                ActionChip(R.drawable.ic_share, "分享") {
                                     val id = selectedIds.first()
                                     scope.launch {
                                         viewModel.clearSelection()
                                         val link = app.shareRepository.generateShareLink(id)
                                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                         clipboard.setPrimaryClip(android.content.ClipData.newPlainText("share_link", link))
-                                        launch { snackbarHostState.showSnackbar("分享链接已复制到剪贴板", duration = SnackbarDuration.Indefinite) }
-                                        kotlinx.coroutines.delay(2000)
-                                        snackbarHostState.currentSnackbarData?.dismiss()
+                                        snackbarHostState.showSnackbar("分享链接已复制到剪贴板", duration = SnackbarDuration.Short)
                                     }
-                                }) {
-                                    Icon(painterResource(R.drawable.ic_share), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(20.dp))
-                                    Text("分享", modifier = Modifier.padding(start = 4.dp))
                                 }
                             }
                         }
@@ -255,11 +226,28 @@ fun FilesScreen(
         },
         floatingActionButton = { },
         snackbarHost = {
-            SnackbarHost(snackbarHostState) { data ->
-                Snackbar(
-                    snackbarData = data,
-                    shape = RoundedCornerShape(24.dp)
-                )
+            SnackbarHost(
+                snackbarHostState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentWidth(Alignment.CenterHorizontally)
+                    .padding(bottom = 64.dp)
+            ) { data ->
+                Row(
+                    modifier = Modifier
+                        .wrapContentWidth()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(MaterialTheme.colorScheme.inverseSurface)
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        data.visuals.message,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     ) { innerPadding ->
@@ -396,6 +384,24 @@ fun FilesScreen(
                 }
             }
 
+    // Move sheet
+    if (showMoveSheet) {
+        val ids = pendingMoveIds ?: emptyList()
+        FolderPickerScreen(
+            initialParentId = "root",
+            excludedFolderIds = ids.toSet(),
+            onFolderSelected = { targetId ->
+                viewModel.moveSelectedFiles(if (targetId == "root") null else targetId, ids)
+                showMoveSheet = false
+                pendingMoveIds = null
+            },
+            onCancel = {
+                showMoveSheet = false
+                pendingMoveIds = null
+            }
+        )
+    }
+
     // Action bottom sheet
     if (showActionSheet) {
         val sheetState = rememberModalBottomSheetState()
@@ -460,6 +466,34 @@ fun FilesScreen(
         }
     }
     } // Box
+}
+
+@Composable
+private fun ActionChip(
+    @androidx.annotation.DrawableRes iconRes: Int,
+    label: String,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(24.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = Color.Unspecified,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text(
+            label,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
 }
 
 @Composable

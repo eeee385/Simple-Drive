@@ -1,28 +1,33 @@
 package com.example.myapplication.ui.screens.files
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,7 +37,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.SimplePanApplication
@@ -51,113 +59,92 @@ fun FolderPickerScreen(
 ) {
     val app = LocalContext.current.applicationContext as SimplePanApplication
     var currentParentId by remember { mutableStateOf(if (initialParentId == "root") null else initialParentId) }
-    var selectedFolderId by remember { mutableStateOf<String?>(null) }
-    var selectedFolderName by remember { mutableStateOf<String?>(null) }
     var folders by remember { mutableStateOf<List<FileEntity>>(emptyList()) }
-    var currentFolderName by remember { mutableStateOf("根目录") }
+    var currentFolderName by remember { mutableStateOf("我的网盘") }
     val navStack = remember { mutableListOf<String?>() }
-    val nameStack = remember { mutableStateListOf("根目录") }
+    val nameStack = remember { mutableStateListOf("我的网盘") }
 
-    // Build path string: e.g. "根目录/文档/子文件夹"
-    val pathString = nameStack.joinToString("/")
+    val pathString = nameStack.joinToString(" > ")
 
     LaunchedEffect(currentParentId) {
         withContext(Dispatchers.IO) {
             val all = app.fileRepository.getFilesByParentId(currentParentId).first()
             folders = all.filter { it.type == "folder" && it.fileId !in excludedFolderIds }
             currentFolderName = if (currentParentId != null) {
-                val file = app.fileRepository.getFileById(currentParentId!!)
-                file?.name ?: "根目录"
-            } else "根目录"
+                app.fileRepository.getFileById(currentParentId!!)?.name ?: "我的网盘"
+            } else "我的网盘"
         }
     }
 
-    // System back button
     BackHandler {
         if (navStack.isNotEmpty()) {
             nameStack.removeLastOrNull()
             currentParentId = navStack.removeLastOrNull()
-            selectedFolderId = null
-            selectedFolderName = null
         } else {
             onCancel()
         }
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text(currentFolderName) },
-                navigationIcon = {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+    ModalBottomSheet(
+        onDismissRequest = onCancel,
+        sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().fillMaxHeight(0.66f)) {
+            // Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(modifier = Modifier.width(48.dp)) {
                     IconButton(onClick = {
                         if (navStack.isNotEmpty()) {
                             nameStack.removeLastOrNull()
                             currentParentId = navStack.removeLastOrNull()
-                            selectedFolderId = null
-                            selectedFolderName = null
                         } else {
                             onCancel()
                         }
                     }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
-                },
-                actions = {
-                    TextButton(onClick = { onFolderSelected(selectedFolderId) }) {
-                        Text("确定")
-                    }
-                },
-                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                }
+                Text(
+                    "选择文件夹",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.weight(1f)
                 )
-            )
-        }
-    ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+                Spacer(Modifier.width(48.dp))
+            }
+
+            // Breadcrumb
             Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("目标: ")
                 Text(
                     pathString,
-                    color = MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            HorizontalDivider()
 
-            // Root option (only at top level)
-            if (currentParentId == null) {
-                ListItem(
-                    headlineContent = { Text("根目录") },
-                    leadingContent = {
-                        Checkbox(
-                            checked = selectedFolderId == null,
-                            onCheckedChange = { if (it) { selectedFolderId = null; selectedFolderName = "根目录" } }
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                HorizontalDivider()
-            }
-
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            // Folder list
+            LazyColumn(modifier = Modifier.weight(1f).fillMaxWidth()) {
                 items(folders, key = { it.fileId }) { folder ->
-                    ListItem(
-                        headlineContent = { Text(folder.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        leadingContent = {
-                            Checkbox(
-                                checked = selectedFolderId == folder.fileId,
-                                onCheckedChange = { checked ->
-                                    if (checked) {
-                                        selectedFolderId = folder.fileId
-                                        selectedFolderName = folder.name
-                                    }
-                                }
-                            )
-                        },
-                        trailingContent = { Icon(Icons.Filled.Folder, contentDescription = null) },
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
@@ -165,8 +152,53 @@ fun FolderPickerScreen(
                                 nameStack.add(folder.name)
                                 currentParentId = folder.fileId
                             }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = androidx.compose.ui.res.painterResource(com.example.myapplication.R.drawable.ic_folder),
+                            contentDescription = null,
+                            tint = androidx.compose.ui.graphics.Color.Unspecified,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Text(
+                            folder.name,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(0.5.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant)
                     )
-                    HorizontalDivider()
+                }
+            }
+
+            // Bottom buttons
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onCancel,
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text("取消")
+                }
+                Button(
+                    onClick = { onFolderSelected(currentParentId ?: "root") },
+                    modifier = Modifier.weight(1f).height(44.dp),
+                    shape = RoundedCornerShape(24.dp)
+                ) {
+                    Text("保存到此处")
                 }
             }
         }

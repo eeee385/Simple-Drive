@@ -8,7 +8,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.myapplication.ui.screens.files.FilesScreen
-import com.example.myapplication.ui.screens.files.FolderPickerScreen
 import com.example.myapplication.ui.screens.pan.RecentListScreen
 import com.example.myapplication.ui.screens.pan.SharePreviewScreen
 import com.example.myapplication.ui.screens.reader.ReaderScreen
@@ -60,26 +59,6 @@ fun AppNavigation(
                     ).show()
                     navController.popBackStack()
                 }
-            )
-        }
-        composable(
-            route = Screen.FolderPicker.route,
-            arguments = listOf(navArgument("parentId") { type = NavType.StringType; defaultValue = "root" })
-        ) {
-            val moveIds = navController.previousBackStackEntry
-                ?.savedStateHandle
-                ?.get<List<String>>("move_ids") ?: emptyList()
-            FolderPickerScreen(
-                initialParentId = "root",
-                excludedFolderIds = moveIds.toSet(),
-                onFolderSelected = { folderId ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set(
-                        "picker_result",
-                        folderId ?: "root"
-                    )
-                    navController.popBackStack()
-                },
-                onCancel = { navController.popBackStack() }
             )
         }
     }

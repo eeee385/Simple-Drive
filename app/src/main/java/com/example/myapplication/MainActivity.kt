@@ -158,7 +158,7 @@ fun MainApp() {
     val currentRoute = navBackStackEntry?.destination?.route
     val isSubScreen = currentRoute != null && currentRoute != Screen.Empty.route
     val hideTabBar = currentRoute in listOf(
-        Screen.Reader.route, Screen.SharePreview.route, Screen.FolderPicker.route,
+        Screen.Reader.route, Screen.SharePreview.route,
         Screen.FileList.route
     )
 

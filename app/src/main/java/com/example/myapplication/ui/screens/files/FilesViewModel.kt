@@ -193,9 +193,9 @@ class FilesViewModel(
         }
     }
 
-    fun moveSelectedFiles(newParentId: String?) {
+    fun moveSelectedFiles(newParentId: String?, fileIds: List<String>? = null) {
         viewModelScope.launch {
-            val ids = _selectedFileIds.value.toList()
+            val ids = fileIds ?: _selectedFileIds.value.toList()
             for (id in ids) {
                 fileRepository.moveFile(id, newParentId)
             }
