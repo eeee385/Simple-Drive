@@ -45,7 +45,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -152,7 +154,9 @@ fun FilesScreen(navController: NavHostController) {
     // Snackbar observer
     LaunchedEffect(snackbarMessage) {
         snackbarMessage?.let { msg ->
-            snackbarHostState.showSnackbar(msg)
+            scope.launch { snackbarHostState.showSnackbar(msg, duration = SnackbarDuration.Indefinite) }
+            kotlinx.coroutines.delay(2000)
+            snackbarHostState.currentSnackbarData?.dismiss()
             viewModel.clearSnackbar()
         }
     }
@@ -251,7 +255,9 @@ fun FilesScreen(navController: NavHostController) {
                                         val link = app.shareRepository.generateShareLink(id)
                                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                                         clipboard.setPrimaryClip(android.content.ClipData.newPlainText("share_link", link))
-                                        snackbarHostState.showSnackbar("分享链接已复制到剪贴板")
+                                        launch { snackbarHostState.showSnackbar("分享链接已复制到剪贴板", duration = SnackbarDuration.Indefinite) }
+                                        kotlinx.coroutines.delay(2000)
+                                        snackbarHostState.currentSnackbarData?.dismiss()
                                     }
                                 }) {
                                     Icon(Icons.Filled.Share, contentDescription = null)
@@ -274,7 +280,14 @@ fun FilesScreen(navController: NavHostController) {
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = {
+            SnackbarHost(snackbarHostState) { data ->
+                Snackbar(
+                    snackbarData = data,
+                    shape = RoundedCornerShape(24.dp)
+                )
+            }
+        }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
             // Filter chips — only at root level
@@ -420,7 +433,7 @@ fun FilesScreen(navController: NavHostController) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_add_circle),
+                        painter = painterResource(R.drawable.ic_upload),
                         contentDescription = null,
                         tint = Color.Unspecified,
                         modifier = Modifier.size(36.dp)

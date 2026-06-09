@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -87,21 +88,12 @@ fun FileListItem(
                 }
                 Spacer(modifier = Modifier.width(10.dp))
             } else {
-                val fileColor = FileTypeHelper.getFileColor(file.type)
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(fileColor.copy(alpha = 0.12f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = FileTypeHelper.getFileIcon(file.type),
-                        contentDescription = file.type,
-                        tint = fileColor,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
+                Icon(
+                    painter = painterResource(FileTypeHelper.getFileIconRes(file.type)),
+                    contentDescription = file.type,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(40.dp)
+                )
                 Spacer(modifier = Modifier.width(12.dp))
             }
 

@@ -42,6 +42,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -349,21 +350,12 @@ private fun RecentFileItem(
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        val fileColor = FileTypeHelper.getFileColor(type)
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(fileColor.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                FileTypeHelper.getFileIcon(type),
-                contentDescription = type,
-                tint = fileColor,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+        Icon(
+            painter = painterResource(FileTypeHelper.getFileIconRes(type)),
+            contentDescription = type,
+            tint = Color.Unspecified,
+            modifier = Modifier.size(40.dp)
+        )
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(

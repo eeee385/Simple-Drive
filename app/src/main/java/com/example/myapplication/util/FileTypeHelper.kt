@@ -1,33 +1,22 @@
 package com.example.myapplication.util
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Article
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.Collections
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.VideoFile
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.myapplication.R
 
 object FileTypeHelper {
 
-    fun getFileIcon(type: String): ImageVector = when (type) {
-        "folder" -> Icons.Filled.Folder
-        "txt" -> Icons.AutoMirrored.Filled.Article
-        "image" -> Icons.Filled.Collections
-        "video" -> Icons.Filled.VideoFile
-        "audio" -> Icons.Filled.Headphones
-        else -> Icons.AutoMirrored.Filled.InsertDriveFile
-    }
-
-    fun getFileColor(type: String): Color = when (type) {
-        "folder" -> Color(0xFF0284C7)
-        "txt" -> Color(0xFF059669)
-        "image" -> Color(0xFFE11D48)
-        "video" -> Color(0xFFD97706)
-        "audio" -> Color(0xFF7C3AED)
-        else -> Color(0xFF64748B)
+    fun getFileIconRes(type: String): Int = when (type) {
+        "folder" -> R.drawable.ic_folder
+        "txt" -> R.drawable.ic_txt
+        "image" -> R.drawable.ic_image
+        "video" -> R.drawable.ic_video
+        "audio" -> R.drawable.ic_music
+        "pdf" -> R.drawable.ic_pdf
+        "ppt" -> R.drawable.ic_ppt
+        "apk" -> R.drawable.ic_apk
+        "code" -> R.drawable.ic_code
+        "exe" -> R.drawable.ic_exe
+        "rar" -> R.drawable.ic_rar
+        else -> R.drawable.ic_file
     }
 
     fun formatFileSize(bytes: Long): String {
@@ -45,9 +34,15 @@ object FileTypeHelper {
         val ext = name.substringAfterLast('.', "").lowercase()
         return when (ext) {
             "txt", "md", "log" -> "txt"
-            "mp4", "avi", "mkv", "mov", "wmv", "flv" -> "video"
-            "jpg", "jpeg", "png", "gif", "bmp", "webp" -> "image"
-            "mp3", "wav", "ogg", "flac", "aac" -> "audio"
+            "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg" -> "image"
+            "mp4", "avi", "mkv", "mov", "wmv", "flv", "3gp" -> "video"
+            "mp3", "wav", "ogg", "flac", "aac", "wma" -> "audio"
+            "pdf" -> "pdf"
+            "ppt", "pptx" -> "ppt"
+            "apk" -> "apk"
+            "kt", "java", "py", "js", "ts", "html", "css", "xml", "json", "c", "cpp", "h", "go", "rs", "swift" -> "code"
+            "exe", "msi" -> "exe"
+            "rar", "zip", "7z", "tar", "gz" -> "rar"
             else -> "other"
         }
     }
