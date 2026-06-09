@@ -54,7 +54,33 @@ fun FileListItem(
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                painter = painterResource(FileTypeHelper.getFileIconRes(file.type)),
+                contentDescription = file.type,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(40.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = file.name,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                if (file.type != "folder") {
+                    Text(
+                        text = FileTypeHelper.formatFileSize(file.size),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
             if (isSelectionMode) {
+                Spacer(modifier = Modifier.width(8.dp))
                 Box(
                     modifier = Modifier.size(40.dp),
                     contentAlignment = Alignment.Center
@@ -85,32 +111,6 @@ fun FileListItem(
                             )
                         }
                     }
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-            } else {
-                Icon(
-                    painter = painterResource(FileTypeHelper.getFileIconRes(file.type)),
-                    contentDescription = file.type,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(40.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-            }
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = file.name,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
-                )
-                if (file.type != "folder") {
-                    Text(
-                        text = FileTypeHelper.formatFileSize(file.size),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             }
         }

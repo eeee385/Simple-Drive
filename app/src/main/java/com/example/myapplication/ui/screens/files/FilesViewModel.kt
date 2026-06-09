@@ -94,11 +94,21 @@ class FilesViewModel(
     private val _selectedFileIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedFileIds: StateFlow<Set<String>> = _selectedFileIds.asStateFlow()
 
-    val isSelectionMode: StateFlow<Boolean> = _selectedFileIds
-        .map { it.isNotEmpty() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    private val _isSelectionActive = MutableStateFlow(false)
+    val isSelectionMode: StateFlow<Boolean> = _isSelectionActive.asStateFlow()
+
+    fun enterSelection(fileId: String? = null) {
+        _isSelectionActive.value = true
+        if (fileId != null) {
+            _selectedFileIds.value = setOf(fileId)
+        }
+    }
 
     fun toggleSelection(fileId: String) {
+        if (!_isSelectionActive.value) {
+            enterSelection(fileId)
+            return
+        }
         _selectedFileIds.value = _selectedFileIds.value.let { ids ->
             if (fileId in ids) ids - fileId else ids + fileId
         }
@@ -106,11 +116,13 @@ class FilesViewModel(
 
     fun selectAll() {
         viewModelScope.launch {
-            _selectedFileIds.value = files.value.map { it.fileId }.toSet()
+            val allIds = files.value.map { it.fileId }.toSet()
+            _selectedFileIds.value = if (_selectedFileIds.value == allIds) emptySet() else allIds
         }
     }
 
     fun clearSelection() {
+        _isSelectionActive.value = false
         _selectedFileIds.value = emptySet()
     }
 

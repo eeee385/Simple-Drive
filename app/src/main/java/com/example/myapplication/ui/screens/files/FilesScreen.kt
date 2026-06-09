@@ -54,6 +54,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -83,7 +84,10 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FilesScreen(navController: NavHostController) {
+fun FilesScreen(
+    navController: NavHostController,
+    onSelectionChanged: ((Boolean, Int, Boolean, () -> Unit, () -> Unit) -> Unit)? = null
+) {
     val app = LocalContext.current.applicationContext as SimplePanApplication
     val viewModel: FilesViewModel = viewModel(
         factory = FilesViewModel.Factory(app.fileRepository, app.userRepository)
@@ -104,6 +108,15 @@ fun FilesScreen(navController: NavHostController) {
     val snackbarMessage by viewModel.snackbarMessage.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val currentFilter by viewModel.filterType.collectAsState()
+
+    LaunchedEffect(isSelectionMode, selectedIds.size, files.size) {
+        val allSelected = files.isNotEmpty() && selectedIds.size == files.size
+        onSelectionChanged?.invoke(
+            isSelectionMode, selectedIds.size, allSelected,
+            { viewModel.clearSelection() },
+            { viewModel.selectAll() }
+        )
+    }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -170,7 +183,7 @@ fun FilesScreen(navController: NavHostController) {
         viewModel.clearSelection()
     }
 
-    val showFullTopBar = isSelectionMode || currentParentId != null
+    val showFullTopBar = currentParentId != null
 
     Scaffold(
         topBar = {
@@ -269,17 +282,7 @@ fun FilesScreen(navController: NavHostController) {
                 )
             }
         },
-        floatingActionButton = {
-            if (!isSelectionMode) {
-                FloatingActionButton(
-                    onClick = { showActionSheet = true },
-                    containerColor = com.example.myapplication.ui.theme.WarmAmber,
-                    contentColor = MaterialTheme.colorScheme.onTertiary
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = "添加")
-                }
-            }
-        },
+        floatingActionButton = { },
         snackbarHost = {
             SnackbarHost(snackbarHostState) { data ->
                 Snackbar(
@@ -289,27 +292,21 @@ fun FilesScreen(navController: NavHostController) {
             }
         }
     ) { innerPadding ->
-        Column(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
             // Filter chips — only at root level
-            if (currentParentId == null && !isSelectionMode) {
-                FilterChipRow(
-                    currentFilter = currentFilter,
-                    onFilterSelected = { viewModel.setFilter(it) }
-                )
+            if (currentParentId == null) {
+                Box(modifier = Modifier.alpha(if (isSelectionMode) 0.4f else 1f)) {
+                    FilterChipRow(
+                        currentFilter = currentFilter,
+                        onFilterSelected = { if (!isSelectionMode) viewModel.setFilter(it) }
+                    )
+                }
             }
 
             var isRefreshing by remember { mutableStateOf(false) }
-            PullToRefreshBox(
-                isRefreshing = isRefreshing,
-                onRefresh = {
-                    scope.launch {
-                        isRefreshing = true
-                        app.fileRepository.syncFromMockData(context)
-                        isRefreshing = false
-                    }
-                },
-                modifier = Modifier.fillMaxSize()
-            ) {
+            @Composable
+            fun FileListInner() {
                 if (files.isEmpty() && !isLoading) {
                     Column(
                         modifier = Modifier.fillMaxSize(),
@@ -348,6 +345,27 @@ fun FilesScreen(navController: NavHostController) {
                 if (isLoading) LoadingOverlay()
             }
 
+            @Composable
+            fun FileListContent() {
+                if (!isSelectionMode) {
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = {
+                            scope.launch {
+                                isRefreshing = true
+                                app.fileRepository.syncFromMockData(context)
+                                isRefreshing = false
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    ) { FileListInner() }
+                } else {
+                    Box(modifier = Modifier.fillMaxSize()) { FileListInner() }
+                }
+            }
+
+            FileListContent()
+
             // Dialogs
             renameTarget?.let { file ->
                 RenameDialog(
@@ -384,6 +402,28 @@ fun FilesScreen(navController: NavHostController) {
             }
         }
     }
+
+            // FAB — right side, 1/5 from bottom
+            if (!isSelectionMode) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Spacer(Modifier.weight(8f))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        FloatingActionButton(
+                            onClick = { showActionSheet = true },
+                            containerColor = com.example.myapplication.ui.theme.WarmAmber,
+                            contentColor = MaterialTheme.colorScheme.onTertiary,
+                            modifier = Modifier.padding(end = 8.dp)
+                        ) {
+                            Icon(Icons.Filled.Add, contentDescription = "添加")
+                        }
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
+            }
+
     // Action bottom sheet
     if (showActionSheet) {
         val sheetState = rememberModalBottomSheetState()
@@ -447,6 +487,7 @@ fun FilesScreen(navController: NavHostController) {
             }
         }
     }
+    } // Box
 }
 
 @Composable

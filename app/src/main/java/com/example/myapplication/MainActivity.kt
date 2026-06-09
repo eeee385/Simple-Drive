@@ -9,21 +9,29 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Cloud
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.outlined.Cloud
-import androidx.compose.material.icons.outlined.Folder
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,12 +40,17 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -100,23 +113,19 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-data class BottomNavItem(
-    val label: String,
-    val selectedIcon: ImageVector,
-    val unselectedIcon: ImageVector,
-)
-
 @Composable
 fun MainApp() {
     val navController: NavHostController = rememberNavController()
 
-    val items = listOf(
-        BottomNavItem("网盘", Icons.Filled.Cloud, Icons.Outlined.Cloud),
-        BottomNavItem("文件", Icons.Filled.Folder, Icons.Outlined.Folder)
-    )
-
     var selectedIndex by rememberSaveable { mutableIntStateOf(0) }
     val pagerState = rememberPagerState(pageCount = { 2 })
+
+    // Files tab selection state
+    var isFilesSelecting by remember { mutableStateOf(false) }
+    var filesSelectCount by remember { mutableIntStateOf(0) }
+    var isFilesAllSelected by remember { mutableStateOf(false) }
+    var filesDismissAction by remember { mutableStateOf<(() -> Unit)?>(null) }
+    var filesToggleAllAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
     val context = LocalContext.current
     LaunchedEffect(Unit) {
@@ -132,80 +141,165 @@ fun MainApp() {
         onDispose { app.onDeepLinkShareId = null }
     }
 
-    // Sync pager ↔ bottom nav
     LaunchedEffect(pagerState.currentPage) {
         selectedIndex = pagerState.currentPage
     }
 
-    // Whether we're in a sub-screen (reader, share preview, etc.)
     val navBackStackEntry by navController.currentBackStackEntryFlow
         .collectAsState(initial = navController.currentBackStackEntry)
     val currentRoute = navBackStackEntry?.destination?.route
     val isSubScreen = currentRoute != null && currentRoute != Screen.Empty.route
-    val hideBottomBar = currentRoute in listOf(
+    val hideTabBar = currentRoute in listOf(
         Screen.Reader.route, Screen.SharePreview.route, Screen.FolderPicker.route,
         Screen.RecentList.route, Screen.FileList.route
     )
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        bottomBar = {
-            if (!hideBottomBar) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 3.dp
-                ) {
-                    items.forEachIndexed { index, item ->
-                        NavigationBarItem(
-                            selected = selectedIndex == index,
-                            onClick = {
-                                selectedIndex = index
-                                scope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = if (selectedIndex == index) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = item.label
-                                )
-                            },
-                            label = { Text(item.label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                            )
-                        )
-                    }
-                }
-            }
-        }
+        modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             Crossfade(targetState = isSubScreen) { onSubScreen ->
                 if (!onSubScreen) {
-                    // Main tabs via pager — each page renders the screen directly
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = true
-                    ) { page ->
-                        when (page) {
-                            0 -> PanScreen(navController = navController)
-                            1 -> FilesScreen(navController = navController)
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Top tab indicator or selection header
+                        if (!hideTabBar) {
+                            if (isFilesSelecting && selectedIndex == 1) {
+                                SelectionHeader(
+                                    selectCount = filesSelectCount,
+                                    allSelected = isFilesAllSelected,
+                                    onDismiss = { filesDismissAction?.invoke() },
+                                    onToggleAll = { filesToggleAllAction?.invoke() }
+                                )
+                            } else {
+                                TopTabBar(
+                                    selectedIndex = selectedIndex,
+                                    onTabClick = { index ->
+                                        selectedIndex = index
+                                        scope.launch { pagerState.animateScrollToPage(index) }
+                                    }
+                                )
+                            }
+                        }
+
+                        HorizontalPager(
+                            state = pagerState,
+                            modifier = Modifier.fillMaxSize(),
+                            userScrollEnabled = !isFilesSelecting
+                        ) { page ->
+                            when (page) {
+                                0 -> PanScreen(navController = navController)
+                                1 -> FilesScreen(
+                                    navController = navController,
+                                    onSelectionChanged = { selecting, count, allSelected, dismiss, toggleAll ->
+                                        isFilesSelecting = selecting
+                                        filesSelectCount = count
+                                        isFilesAllSelected = allSelected
+                                        filesDismissAction = dismiss
+                                        filesToggleAllAction = toggleAll
+                                    }
+                                )
+                            }
                         }
                     }
                 }
             }
 
-            // Sub-navigation layer
             AppNavigation(
                 navController = navController,
                 modifier = Modifier.fillMaxSize()
             )
         }
     }
+}
+
+@Composable
+private fun SelectionHeader(
+    selectCount: Int,
+    allSelected: Boolean,
+    onDismiss: () -> Unit,
+    onToggleAll: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(modifier = Modifier.width(48.dp), contentAlignment = Alignment.Center) {
+            IconButton(onClick = onDismiss) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "取消选择"
+                )
+            }
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "管理文件",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                "已选择 $selectCount 项",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Box(modifier = Modifier.width(88.dp), contentAlignment = Alignment.Center) {
+            TextButton(onClick = onToggleAll) {
+                Text(if (allSelected) "取消全选" else "全选")
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopTabBar(
+    selectedIndex: Int,
+    onTabClick: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .padding(top = 4.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TabText("网盘", selected = selectedIndex == 0) { onTabClick(0) }
+        Spacer(Modifier.width(24.dp))
+        TabText("文件", selected = selectedIndex == 1) { onTabClick(1) }
+    }
+}
+
+@Composable
+private fun TabText(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val fontSize by animateFloatAsState(
+        targetValue = if (selected) 22f else 16f,
+        label = "fontSize"
+    )
+    val color by animateColorAsState(
+        targetValue = if (selected) MaterialTheme.colorScheme.onBackground
+                      else MaterialTheme.colorScheme.onSurfaceVariant,
+        label = "tabColor"
+    )
+
+    Text(
+        text = text,
+        fontSize = fontSize.sp,
+        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+        color = color,
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 2.dp)
+    )
 }
