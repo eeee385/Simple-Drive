@@ -77,7 +77,7 @@ fun SharePreviewScreen(
             if (fileIds.isEmpty()) { errorMsg = "分享链接无效或已过期"; isLoading = false; return@withContext }
             val items = fileIds.mapNotNull { id -> app.fileRepository.getFileById(id) }
             if (items.isEmpty()) { errorMsg = "文件不存在"; isLoading = false; return@withContext }
-            rootItems = items.map { file -> buildTree(app, file, 0) }
+            rootItems = items.map { file -> buildTree(app, file, 0) }.sortedByDescending { it.file.type == "folder" }
             items.filter { it.type == "folder" }.forEach { expandedIds[it.fileId] = true }
             isLoading = false
         }
@@ -163,15 +163,15 @@ private fun ShareTreeView(item: ShareTreeItem, expandedIds: MutableMap<String, B
         ) {
             Spacer(Modifier.width((item.depth * 24).dp))
 
-            if (isFolder && hasChildren) {
-                Icon(
-                    if (isExpanded) Icons.Filled.ExpandMore else Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                Spacer(Modifier.width(24.dp))
+            Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                if (isFolder && hasChildren) {
+                    Icon(
+                        if (isExpanded) Icons.Filled.ExpandMore else Icons.Filled.ChevronRight,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             Spacer(Modifier.width(8.dp))
@@ -214,6 +214,7 @@ private suspend fun buildTree(app: SimplePanApplication, file: FileEntity, depth
         app.fileRepository.getFilesByParentId(file.fileId)
             .let { flow -> flow.first() }
             .map { child -> buildTree(app, child, depth + 1) }
+            .sortedByDescending { it.file.type == "folder" }
     } else emptyList()
     return ShareTreeItem(file = file, depth = depth, children = children)
 }
