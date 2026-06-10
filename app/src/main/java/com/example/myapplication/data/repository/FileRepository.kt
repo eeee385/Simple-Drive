@@ -95,6 +95,10 @@ class FileRepository(context: Context) {
         shareLinkDao.getShareLink(shareId)?.fileId
     }
 
+    suspend fun resolveShareLinks(shareId: String): List<String> = withContext(Dispatchers.IO) {
+        shareLinkDao.getShareLinks(shareId).map { it.fileId }
+    }
+
     // Mock network sync: load JSON from assets, parse, insert into Room
     suspend fun syncFromMockData(context: Context) = withContext(Dispatchers.IO) {
         delay(500) // simulate network latency

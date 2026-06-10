@@ -206,17 +206,15 @@ fun FilesScreen(
                             ActionChip(R.drawable.ic_delete, "删除") {
                                 deleteTargets = selectedIds.toList()
                             }
-                            // 分享 - only when single file selected
-                            if (selectedIds.size == 1) {
-                                ActionChip(R.drawable.ic_share, "分享") {
-                                    val id = selectedIds.first()
-                                    scope.launch {
-                                        viewModel.clearSelection()
-                                        val link = app.shareRepository.generateShareLink(id)
-                                        val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                                        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("share_link", link))
-                                        snackbarHostState.showSnackbar("分享链接已复制到剪贴板", duration = SnackbarDuration.Short)
-                                    }
+                            // 分享
+                            ActionChip(R.drawable.ic_share, "分享") {
+                                scope.launch {
+                                    val ids = selectedIds.toList()
+                                    val link = app.shareRepository.generateShareLink(ids)
+                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("share_link", link))
+                                    viewModel.clearSelection()
+                                    snackbarHostState.showSnackbar("分享链接已复制到剪贴板", duration = SnackbarDuration.Short)
                                 }
                             }
                         }

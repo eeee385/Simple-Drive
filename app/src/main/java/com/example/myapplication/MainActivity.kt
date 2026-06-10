@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -158,7 +159,7 @@ fun MainApp() {
     val currentRoute = navBackStackEntry?.destination?.route
     val isSubScreen = currentRoute != null && currentRoute != Screen.Empty.route
     val hideTabBar = currentRoute in listOf(
-        Screen.Reader.route, Screen.SharePreview.route,
+        Screen.Reader.route,
         Screen.FileList.route
     )
 
@@ -172,6 +173,8 @@ fun MainApp() {
                     val listType = navBackStackEntry?.arguments?.getString("listType") ?: "browse"
                     val title = if (listType == "browse") "最近浏览" else "最近转存"
                     SubPageHeader(title = title, onBack = { navController.popBackStack() }, fontSize = 22.sp)
+                } else if (isSubScreen && currentRoute?.startsWith("share_preview") == true) {
+                    SubPageHeader(title = "分享文件", onBack = { navController.popBackStack() })
                 } else if (isFilesSelecting && selectedIndex == 1) {
                     SelectionHeader(
                         selectCount = filesSelectCount,
@@ -196,10 +199,16 @@ fun MainApp() {
             }
 
             Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
-                Crossfade(targetState = isSubScreen) { onSubScreen ->
-                    if (!onSubScreen) {
-                        Column(modifier = Modifier.fillMaxSize()) {
-                            HorizontalPager(
+                // NavHost behind — always composed so navigation works
+                AppNavigation(
+                    navController = navController,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                // Pager on top, hidden when on sub-screen
+                if (!isSubScreen) {
+                    Column(modifier = Modifier.fillMaxSize().zIndex(1f)) {
+                        HorizontalPager(
                             state = pagerState,
                             modifier = Modifier.fillMaxSize(),
                             userScrollEnabled = !isFilesSelecting && !isInSubFolder && !isSubScreen
@@ -225,12 +234,6 @@ fun MainApp() {
                         }
                     }
                 }
-            }
-
-                AppNavigation(
-                    navController = navController,
-                    modifier = Modifier.fillMaxSize()
-                )
             }
         }
     }
