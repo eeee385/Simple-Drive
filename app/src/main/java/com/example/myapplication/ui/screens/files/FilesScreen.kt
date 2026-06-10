@@ -42,8 +42,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Scaffold
@@ -269,9 +271,22 @@ fun FilesScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        EmptyState(icon = Icons.Filled.Folder, message = "暂无文件", modifier = Modifier.height(160.dp))
-                        TextButton(onClick = { filePickerLauncher.launch("*/*") }) {
-                            Text("上传第一个文件")
+                        EmptyState(icon = Icons.Filled.Folder, message = "暂无文件", modifier = Modifier.height(120.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            OutlinedButton(onClick = { filePickerLauncher.launch("*/*") }) {
+                                Text("上传文件")
+                            }
+                            if (currentParentId == null) {
+                                Button(onClick = {
+                                    scope.launch {
+                                        isRefreshing = true
+                                        app.fileRepository.syncFromMockData(context)
+                                        isRefreshing = false
+                                    }
+                                }) {
+                                    Text("加载示例数据")
+                                }
+                            }
                         }
                     }
                 } else {

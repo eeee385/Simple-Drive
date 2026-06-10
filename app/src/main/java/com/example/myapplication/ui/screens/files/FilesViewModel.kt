@@ -60,7 +60,7 @@ class FilesViewModel(
             FilterType.ALL -> source
             FilterType.IMAGE -> source.filter { it.type == "image" }
             FilterType.VIDEO -> source.filter { it.type == "video" }
-            FilterType.DOC -> source.filter { it.type == "txt" }
+            FilterType.DOC -> source.filter { it.type !in setOf("folder", "image", "video", "audio", "apk", "exe", "rar") }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

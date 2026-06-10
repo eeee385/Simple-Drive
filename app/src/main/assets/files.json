@@ -28,11 +28,29 @@
             {
                 "fileId": "file-pdf-001",
                 "name": "开发文档.pdf",
-                "type": "other",
+                "type": "pdf",
                 "size": 1024000,
                 "path": "/文档/开发文档.pdf",
                 "parentId": "folder-001",
                 "timestamp": 1715000003000
+            },
+            {
+                "fileId": "file-ppt-001",
+                "name": "季度汇报.pptx",
+                "type": "ppt",
+                "size": 2048000,
+                "path": "/文档/季度汇报.pptx",
+                "parentId": "folder-001",
+                "timestamp": 1715000004000
+            },
+            {
+                "fileId": "file-code-001",
+                "name": "MainActivity.kt",
+                "type": "code",
+                "size": 8192,
+                "path": "/文档/MainActivity.kt",
+                "parentId": "folder-001",
+                "timestamp": 1715000005000
             }
         ]
     },
@@ -75,7 +93,7 @@
             {
                 "fileId": "img-001",
                 "name": "截图1.png",
-                "type": "other",
+                "type": "image",
                 "size": 512000,
                 "path": "/图片/截图1.png",
                 "parentId": "folder-003",
@@ -84,7 +102,7 @@
             {
                 "fileId": "img-002",
                 "name": "照片.jpg",
-                "type": "other",
+                "type": "image",
                 "size": 2048000,
                 "path": "/图片/照片.jpg",
                 "parentId": "folder-003",
@@ -99,6 +117,62 @@
         "path": "/音乐",
         "parentId": null,
         "timestamp": 1715000030000,
-        "children": []
+        "children": [
+            {
+                "fileId": "audio-001",
+                "name": "治愈系纯音乐.mp3",
+                "type": "audio",
+                "size": 8192000,
+                "path": "/音乐/治愈系纯音乐.mp3",
+                "parentId": "file-folder-004",
+                "timestamp": 1715000031000
+            },
+            {
+                "fileId": "audio-002",
+                "name": "钢琴曲.wav",
+                "type": "audio",
+                "size": 48000000,
+                "path": "/音乐/钢琴曲.wav",
+                "parentId": "file-folder-004",
+                "timestamp": 1715000032000
+            }
+        ]
+    },
+    {
+        "fileId": "folder-005",
+        "name": "软件",
+        "type": "folder",
+        "path": "/软件",
+        "parentId": null,
+        "timestamp": 1715000040000,
+        "children": [
+            {
+                "fileId": "file-apk-001",
+                "name": "SimplePan.apk",
+                "type": "apk",
+                "size": 15728640,
+                "path": "/软件/SimplePan.apk",
+                "parentId": "folder-005",
+                "timestamp": 1715000041000
+            },
+            {
+                "fileId": "file-exe-001",
+                "name": "安装程序.exe",
+                "type": "exe",
+                "size": 52428800,
+                "path": "/软件/安装程序.exe",
+                "parentId": "folder-005",
+                "timestamp": 1715000042000
+            },
+            {
+                "fileId": "file-rar-001",
+                "name": "源码备份.zip",
+                "type": "rar",
+                "size": 31457280,
+                "path": "/软件/源码备份.zip",
+                "parentId": "folder-005",
+                "timestamp": 1715000043000
+            }
+        ]
     }
 ]
