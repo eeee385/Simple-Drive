@@ -1,6 +1,7 @@
 package com.example.myapplication.data.repository
 
 import com.example.myapplication.data.local.db.entity.ShareLinkEntity
+import com.example.myapplication.util.FileTypeHelper
 import kotlin.random.Random
 
 class ShareRepository(private val fileRepository: FileRepository) {
@@ -12,7 +13,7 @@ class ShareRepository(private val fileRepository: FileRepository) {
         for (fileId in fileIds) {
             fileRepository.createShareLink(shareId, fileId)
         }
-        return "simplepan://share?sid=$shareId"
+        return "${FileTypeHelper.DEEP_LINK_PREFIX}$shareId"
     }
 
     suspend fun resolveShareLinks(shareId: String): List<String> {

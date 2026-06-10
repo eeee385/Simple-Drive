@@ -134,7 +134,12 @@ fun ReaderScreen(navController: NavController) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .onSizeChanged { containerWidth = it.width; containerHeight = it.height } //动态适配当前的屏幕尺寸
+                .onSizeChanged { size ->
+                    if (size.width != containerWidth || size.height != containerHeight) {
+                        containerWidth = size.width
+                        containerHeight = size.height
+                    }
+                }
         ) {
             if (showLoading) {
                 LoadingOverlay()

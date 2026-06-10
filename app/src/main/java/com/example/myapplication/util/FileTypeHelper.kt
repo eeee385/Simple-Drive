@@ -3,6 +3,7 @@ package com.example.myapplication.util
 import com.example.myapplication.R
 
 object FileTypeHelper {
+    const val DEEP_LINK_PREFIX = "simplepan://share?sid="
 
     fun getFileIconRes(type: String): Int = when (type) {
         "folder" -> R.drawable.ic_folder

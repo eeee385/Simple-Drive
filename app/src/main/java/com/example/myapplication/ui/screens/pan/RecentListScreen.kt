@@ -69,12 +69,14 @@ fun RecentListScreen(
 
     data class RecentItem(val id: String, val name: String, val type: String, val size: Long, val time: Long, val file: FileEntity)
 
-    val (title, items) = when (listType) {
-        "browse" -> "最近浏览" to recentBrowses.map { ft ->
-            RecentItem(ft.file.fileId, ft.file.name, ft.file.type, ft.file.size, ft.browseTime, ft.file)
-        }
-        else -> "最近转存" to recentTransfers.map { ft ->
-            RecentItem(ft.file.fileId, ft.file.name, ft.file.type, ft.file.size, ft.transferTime, ft.file)
+    val (title, items) = remember(listType, recentBrowses, recentTransfers) {
+        when (listType) {
+            "browse" -> "最近浏览" to recentBrowses.map { ft ->
+                RecentItem(ft.file.fileId, ft.file.name, ft.file.type, ft.file.size, ft.browseTime, ft.file)
+            }
+            else -> "最近转存" to recentTransfers.map { ft ->
+                RecentItem(ft.file.fileId, ft.file.name, ft.file.type, ft.file.size, ft.transferTime, ft.file)
+            }
         }
     }
 
@@ -84,9 +86,7 @@ fun RecentListScreen(
     }
 
     if (!ready) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        com.example.myapplication.ui.components.LoadingOverlay()
     } else if (items.isEmpty()) {
         EmptyState(
             icon = Icons.Filled.History,

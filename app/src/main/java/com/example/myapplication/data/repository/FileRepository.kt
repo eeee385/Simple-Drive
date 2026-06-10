@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
 class FileRepository(context: Context) {
@@ -39,30 +40,20 @@ class FileRepository(context: Context) {
     suspend fun getAllFoldersExcept(excludeId: String): List<FileEntity> =
         fileDao.getAllFoldersExcept(excludeId)
 
-    suspend fun insertFile(file: FileEntity) = withContext(Dispatchers.IO) {
-        fileDao.insertFile(file)
-    }
+    suspend fun insertFile(file: FileEntity) = fileDao.insertFile(file)
 
-    suspend fun renameFile(fileId: String, newName: String) = withContext(Dispatchers.IO) {
-        fileDao.renameFile(fileId, newName)
-    }
+    suspend fun renameFile(fileId: String, newName: String) = fileDao.renameFile(fileId, newName)
 
-    suspend fun moveFile(fileId: String, newParentId: String?) = withContext(Dispatchers.IO) {
-        fileDao.moveFile(fileId, newParentId)
-    }
+    suspend fun moveFile(fileId: String, newParentId: String?) = fileDao.moveFile(fileId, newParentId)
 
-    suspend fun deleteFileRecursively(fileId: String) = withContext(Dispatchers.IO) {
+    suspend fun deleteFileRecursively(fileId: String) {
         fileDao.deleteChildrenOfFolder(fileId)
         fileDao.deleteFile(fileId)
     }
 
-    suspend fun getTotalUsedSpace(): Long = withContext(Dispatchers.IO) {
-        fileDao.getTotalUsedSpace()
-    }
+    suspend fun getTotalUsedSpace(): Long = fileDao.getTotalUsedSpace()
 
-    suspend fun getFileCount(): Int = withContext(Dispatchers.IO) {
-        fileDao.getFileCount()
-    }
+    suspend fun getFileCount(): Int = fileDao.getFileCount()
 
     fun getRecentBrowses(limit: Int = 20): Flow<List<FileWithBrowseTime>> =
         browseDao.getRecentBrowses(limit)
@@ -70,20 +61,20 @@ class FileRepository(context: Context) {
     fun getRecentTransfers(limit: Int = 20): Flow<List<FileWithTransferTime>> =
         transferDao.getRecentTransfers(limit)
 
-    suspend fun recordBrowse(fileId: String) = withContext(Dispatchers.IO) {
+    suspend fun recordBrowse(fileId: String) {
         browseDao.upsert(
             RecentBrowseEntity(fileId = fileId, browseTime = System.currentTimeMillis())
         )
     }
 
-    suspend fun recordTransfer(fileId: String) = withContext(Dispatchers.IO) {
+    suspend fun recordTransfer(fileId: String) {
         transferDao.upsert(
             RecentTransferEntity(fileId = fileId, transferTime = System.currentTimeMillis())
         )
     }
 
     // Share link
-    suspend fun createShareLink(shareId: String, fileId: String) = withContext(Dispatchers.IO) {
+    suspend fun createShareLink(shareId: String, fileId: String) {
         shareLinkDao.insert(
             com.example.myapplication.data.local.db.entity.ShareLinkEntity(
                 shareId = shareId, fileId = fileId
@@ -91,13 +82,11 @@ class FileRepository(context: Context) {
         )
     }
 
-    suspend fun resolveShareLink(shareId: String): String? = withContext(Dispatchers.IO) {
+    suspend fun resolveShareLink(shareId: String): String? =
         shareLinkDao.getShareLink(shareId)?.fileId
-    }
 
-    suspend fun resolveShareLinks(shareId: String): List<String> = withContext(Dispatchers.IO) {
+    suspend fun resolveShareLinks(shareId: String): List<String> =
         shareLinkDao.getShareLinks(shareId).map { it.fileId }
-    }
 
     // Mock network sync: load JSON from assets, parse, insert into Room
     suspend fun syncFromMockData(context: Context) = withContext(Dispatchers.IO) {

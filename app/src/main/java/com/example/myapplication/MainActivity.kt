@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
             ?.takeIf { it.itemCount > 0 }
             ?.getItemAt(0)?.text?.toString() ?: return
 
-        val prefix = "simplepan://share?sid="
+        val prefix = com.example.myapplication.util.FileTypeHelper.DEEP_LINK_PREFIX
         if (!clipText.startsWith(prefix)) return
         val shareId = clipText.removePrefix(prefix)
         if (shareId.isBlank()) return
