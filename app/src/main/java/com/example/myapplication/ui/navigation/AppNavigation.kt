@@ -2,9 +2,8 @@ package com.example.myapplication.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -28,10 +27,10 @@ fun AppNavigation(
         navController = navController,
         startDestination = Screen.Empty.route,
         modifier = modifier,
-        enterTransition = { fadeIn(tween(0)) },
-        exitTransition = { fadeOut(tween(0)) },
-        popEnterTransition = { fadeIn(tween(0)) },
-        popExitTransition = { fadeOut(tween(0)) }
+        enterTransition = { EnterTransition.None },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { ExitTransition.None }
     ) {
         composable(Screen.Empty.route) {
             // Placeholder — main tabs are rendered by the pager

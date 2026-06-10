@@ -116,8 +116,8 @@ fun FilesScreen(
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val currentFilter by viewModel.filterType.collectAsState()
 
-    LaunchedEffect(isSelectionMode, selectedIds.size, files.size) {
-        val allSelected = files.isNotEmpty() && selectedIds.size == files.size
+    LaunchedEffect(isSelectionMode, selectedIds.size) {
+        val allSelected = selectedIds.size > 0 && selectedIds.size == files.size
         onSelectionChanged?.invoke(
             isSelectionMode, selectedIds.size, allSelected,
             { viewModel.clearSelection() },
@@ -146,10 +146,11 @@ fun FilesScreen(
     var showMoveSheet by remember { mutableStateOf(false) }
 
     var currentFolderName by remember { mutableStateOf("") }
-    var folderPath by remember { mutableStateOf<List<String>>(emptyList()) }
-
-    // Move action handler — called directly from FolderPicker
-    var doMoveAction by remember { mutableStateOf<((String?) -> Unit)?>(null) }
+    val vmFolderName by viewModel.currentFolderName.collectAsState()
+    currentFolderName = if (currentParentId == null) "" else vmFolderName
+    val folderPath = remember(currentParentId, vmFolderName) {
+        if (currentParentId == null) emptyList() else listOf("我的网盘") + viewModel.getFolderPath()
+    }
 
     // Snackbar observer
     LaunchedEffect(snackbarMessage) {
@@ -169,9 +170,6 @@ fun FilesScreen(
     }
 
     // Track folder path for breadcrumb — using SideEffect for same-frame update
-    val vmFolderName by viewModel.currentFolderName.collectAsState()
-    currentFolderName = if (currentParentId == null) "" else vmFolderName
-    folderPath = if (currentParentId == null) emptyList() else listOf("我的网盘") + viewModel.getFolderPath()
     SideEffect {
         onFolderChanged?.invoke(currentParentId != null, currentFolderName) { viewModel.navigateBack() }
     }

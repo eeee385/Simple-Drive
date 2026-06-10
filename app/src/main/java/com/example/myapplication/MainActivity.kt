@@ -158,10 +158,8 @@ fun MainApp() {
         .collectAsState(initial = navController.currentBackStackEntry)
     val currentRoute = navBackStackEntry?.destination?.route
     val isSubScreen = currentRoute != null && currentRoute != Screen.Empty.route
-    val hideTabBar = currentRoute in listOf(
-        Screen.Reader.route,
-        Screen.FileList.route
-    )
+    val hideBarRoutes = remember { setOf(Screen.Reader.route, Screen.FileList.route) }
+    val hideTabBar = currentRoute in hideBarRoutes
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
@@ -169,11 +167,11 @@ fun MainApp() {
         Column(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
             // Header area — shown when not on full-screen pages
             if (!hideTabBar) {
-                if (isSubScreen && currentRoute?.startsWith("recent_list") == true) {
+                if (isSubScreen && currentRoute == Screen.RecentList.route) {
                     val listType = navBackStackEntry?.arguments?.getString("listType") ?: "browse"
                     val title = if (listType == "browse") "最近浏览" else "最近转存"
                     SubPageHeader(title = title, onBack = { navController.popBackStack() }, fontSize = 22.sp)
-                } else if (isSubScreen && currentRoute?.startsWith("share_preview") == true) {
+                } else if (isSubScreen && currentRoute == Screen.SharePreview.route) {
                     SubPageHeader(title = "分享文件", onBack = { navController.popBackStack() })
                 } else if (isFilesSelecting && selectedIndex == 1) {
                     SelectionHeader(
@@ -183,8 +181,8 @@ fun MainApp() {
                         onToggleAll = { filesToggleAllAction?.invoke() }
                     )
                 } else if (isInSubFolder && selectedIndex == 1) {
-                    SubFolderHeader(
-                        folderName = subFolderName,
+                    SubPageHeader(
+                        title = subFolderName,
                         onBack = { filesNavigateBack?.invoke() }
                     )
                 } else if (!isSubScreen) {
@@ -313,37 +311,6 @@ private fun SubPageHeader(
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.width(48.dp))
-    }
-}
-
-@Composable
-private fun SubFolderHeader(
-    folderName: String,
-    onBack: () -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(36.dp)
-            .padding(horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(modifier = Modifier.width(48.dp)) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "返回"
-                )
-            }
-        }
-        Text(
-            folderName,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.weight(1f),
-            textAlign = TextAlign.Center
-        )
-        Box(modifier = Modifier.width(48.dp))
     }
 }
 
