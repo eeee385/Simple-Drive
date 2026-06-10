@@ -45,6 +45,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.SimplePanApplication
 import com.example.myapplication.data.local.db.entity.FileEntity
+import com.example.myapplication.domain.model.FileCategory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -69,7 +70,7 @@ fun FolderPickerScreen(
     LaunchedEffect(currentParentId) {
         withContext(Dispatchers.IO) {
             val all = app.fileRepository.getFilesByParentId(currentParentId).first()
-            folders = all.filter { it.type == "folder" && it.fileId !in excludedFolderIds }
+            folders = all.filter { it.type == FileCategory.FOLDER && it.fileId !in excludedFolderIds }
             currentFolderName = if (currentParentId != null) {
                 app.fileRepository.getFileById(currentParentId!!)?.name ?: "我的网盘"
             } else "我的网盘"

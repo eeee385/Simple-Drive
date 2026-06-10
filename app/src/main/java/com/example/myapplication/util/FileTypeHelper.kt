@@ -1,22 +1,23 @@
 package com.example.myapplication.util
 
 import com.example.myapplication.R
+import com.example.myapplication.domain.model.FileCategory
 
 object FileTypeHelper {
     const val DEEP_LINK_PREFIX = "simplepan://share?sid="
 
     fun getFileIconRes(type: String): Int = when (type) {
-        "folder" -> R.drawable.ic_folder
-        "txt" -> R.drawable.ic_txt
-        "image" -> R.drawable.ic_image
-        "video" -> R.drawable.ic_video
-        "audio" -> R.drawable.ic_music
-        "pdf" -> R.drawable.ic_pdf
-        "ppt" -> R.drawable.ic_ppt
-        "apk" -> R.drawable.ic_apk
-        "code" -> R.drawable.ic_code
-        "exe" -> R.drawable.ic_exe
-        "rar" -> R.drawable.ic_rar
+        FileCategory.FOLDER -> R.drawable.ic_folder
+        FileCategory.TXT -> R.drawable.ic_txt
+        FileCategory.IMAGE -> R.drawable.ic_image
+        FileCategory.VIDEO -> R.drawable.ic_video
+        FileCategory.AUDIO -> R.drawable.ic_music
+        FileCategory.PDF -> R.drawable.ic_pdf
+        FileCategory.PPT -> R.drawable.ic_ppt
+        FileCategory.APK -> R.drawable.ic_apk
+        FileCategory.CODE -> R.drawable.ic_code
+        FileCategory.EXE -> R.drawable.ic_exe
+        FileCategory.RAR -> R.drawable.ic_rar
         else -> R.drawable.ic_file
     }
 
@@ -34,17 +35,17 @@ object FileTypeHelper {
     fun getFileTypeFromName(name: String): String {
         val ext = name.substringAfterLast('.', "").lowercase()
         return when (ext) {
-            "txt", "md", "log" -> "txt"
-            "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg" -> "image"
-            "mp4", "avi", "mkv", "mov", "wmv", "flv", "3gp" -> "video"
-            "mp3", "wav", "ogg", "flac", "aac", "wma" -> "audio"
-            "pdf" -> "pdf"
-            "ppt", "pptx" -> "ppt"
-            "apk" -> "apk"
-            "kt", "java", "py", "js", "ts", "html", "css", "xml", "json", "c", "cpp", "h", "go", "rs", "swift" -> "code"
-            "exe", "msi" -> "exe"
-            "rar", "zip", "7z", "tar", "gz" -> "rar"
-            else -> "other"
+            "txt", "md", "log" -> FileCategory.TXT
+            "jpg", "jpeg", "png", "gif", "bmp", "webp", "svg" -> FileCategory.IMAGE
+            "mp4", "avi", "mkv", "mov", "wmv", "flv", "3gp" -> FileCategory.VIDEO
+            "mp3", "wav", "ogg", "flac", "aac", "wma" -> FileCategory.AUDIO
+            "pdf" -> FileCategory.PDF
+            "ppt", "pptx" -> FileCategory.PPT
+            "apk" -> FileCategory.APK
+            "kt", "java", "py", "js", "ts", "html", "css", "xml", "json", "c", "cpp", "h", "go", "rs", "swift" -> FileCategory.CODE
+            "exe", "msi" -> FileCategory.EXE
+            "rar", "zip", "7z", "tar", "gz" -> FileCategory.RAR
+            else -> FileCategory.OTHER
         }
     }
 

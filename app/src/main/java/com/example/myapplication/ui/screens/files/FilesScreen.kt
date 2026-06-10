@@ -79,6 +79,8 @@ import androidx.navigation.NavHostController
 import com.example.myapplication.R
 import com.example.myapplication.SimplePanApplication
 import com.example.myapplication.data.local.db.entity.FileEntity
+import com.example.myapplication.domain.model.FileCategory
+import com.example.myapplication.domain.model.FilterType
 import com.example.myapplication.ui.components.EmptyState
 import com.example.myapplication.ui.components.FileListItem
 import com.example.myapplication.ui.components.LoadingOverlay
@@ -612,7 +614,7 @@ private fun onFileClick(
     context: android.content.Context
 ) {
     when (file.type) {
-        "folder" -> viewModel.navigateToFolder(file.fileId, file.name)
+        FileCategory.FOLDER -> viewModel.navigateToFolder(file.fileId, file.name)
         "txt" -> {
             viewModel.recordBrowse(file.fileId)
             navController.navigate(Screen.Reader.createRoute(file.fileId))

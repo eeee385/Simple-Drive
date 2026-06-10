@@ -46,6 +46,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.myapplication.SimplePanApplication
 import com.example.myapplication.data.local.db.entity.FileEntity
+import com.example.myapplication.domain.model.FileCategory
 import com.example.myapplication.ui.components.EmptyState
 import com.example.myapplication.ui.navigation.Screen
 import com.example.myapplication.util.FileOpener
@@ -102,8 +103,8 @@ fun RecentListScreen(
                             .clickable(onClick = {
                                 viewModel.recordBrowse(item.file.fileId)
                                 when (item.file.type) {
-                                    "folder" -> navController.navigate(Screen.FileList.createRoute(item.file.fileId))
-                                    "txt" -> navController.navigate(Screen.Reader.createRoute(item.file.fileId))
+                                    FileCategory.FOLDER -> navController.navigate(Screen.FileList.createRoute(item.file.fileId))
+                                    FileCategory.TXT -> navController.navigate(Screen.Reader.createRoute(item.file.fileId))
                                     else -> FileOpener.openFile(context, item.file)
                                 }
                             })

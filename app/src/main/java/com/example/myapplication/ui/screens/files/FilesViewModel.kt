@@ -9,6 +9,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.myapplication.data.local.db.entity.FileEntity
 import com.example.myapplication.data.repository.FileRepository
 import com.example.myapplication.data.repository.UserRepository
+import com.example.myapplication.domain.model.FilterType
+import com.example.myapplication.domain.service.FileService
 import com.example.myapplication.util.FileTypeHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +24,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
-
-enum class FilterType { ALL, IMAGE, VIDEO, DOC }
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class FilesViewModel(
@@ -42,11 +42,11 @@ class FilesViewModel(
 
     private val rawFiles: StateFlow<List<FileEntity>> = _currentParentId
         .flatMapLatest { parentId -> fileRepository.getFilesByParentId(parentId) }
-        .map { list -> list.sortedWith(fileSortComparator) }
+        .map { FileService.sort(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val allFiles: StateFlow<List<FileEntity>> = fileRepository.getAllFiles()
-        .map { list -> list.sortedWith(fileSortComparator) }
+        .map { FileService.sort(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _filterType = MutableStateFlow(FilterType.ALL)
@@ -56,34 +56,12 @@ class FilesViewModel(
         rawFiles, allFiles, _filterType, _currentParentId
     ) { folderFiles, all, filter, parentId ->
         val source = if (parentId == null && filter != FilterType.ALL) all else folderFiles
-        when (filter) {
-            FilterType.ALL -> source
-            FilterType.IMAGE -> source.filter { it.type == "image" }
-            FilterType.VIDEO -> source.filter { it.type == "video" }
-            FilterType.DOC -> source.filter { it.type !in setOf("folder", "image", "video", "audio", "apk", "exe", "rar") }
-        }
+        FileService.filter(source, filter)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setFilter(type: FilterType) {
         _filterType.value = type
         clearSelection()
-    }
-
-    companion object {
-        private val typeOrder = mapOf(
-            "folder" to 0,
-            "txt" to 1,
-            "image" to 2,
-            "video" to 3,
-            "audio" to 4
-        )
-
-        val fileSortComparator = Comparator<FileEntity> { a, b ->
-            val typeA = typeOrder[a.type] ?: 99
-            val typeB = typeOrder[b.type] ?: 99
-            if (typeA != typeB) typeA - typeB
-            else a.name.lowercase().compareTo(b.name.lowercase())
-        }
     }
 
     val isLoading = MutableStateFlow(false)

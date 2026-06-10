@@ -50,6 +50,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.myapplication.SimplePanApplication
 import com.example.myapplication.data.local.db.entity.FileEntity
+import com.example.myapplication.domain.model.FileCategory
 import com.example.myapplication.domain.model.UserInfo
 import com.example.myapplication.ui.components.EmptyState
 import com.example.myapplication.ui.navigation.Screen
@@ -377,8 +378,8 @@ private fun RecentFileItem(
 private fun navigateToFile(file: FileEntity, navController: NavHostController, context: android.content.Context, viewModel: PanViewModel) {
     viewModel.recordBrowse(file.fileId)
     when (file.type) {
-        "folder" -> navController.navigate(Screen.FileList.createRoute(file.fileId))
-        "txt" -> navController.navigate(Screen.Reader.createRoute(file.fileId))
+        FileCategory.FOLDER -> navController.navigate(Screen.FileList.createRoute(file.fileId))
+        FileCategory.TXT -> navController.navigate(Screen.Reader.createRoute(file.fileId))
         else -> com.example.myapplication.util.FileOpener.openFile(context, file)
     }
 }

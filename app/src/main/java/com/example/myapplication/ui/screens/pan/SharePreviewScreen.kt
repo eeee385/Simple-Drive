@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.SimplePanApplication
 import com.example.myapplication.data.local.db.entity.FileEntity
+import com.example.myapplication.domain.model.FileCategory
 import com.example.myapplication.ui.components.LoadingOverlay
 import com.example.myapplication.ui.theme.WarmAmber
 import com.example.myapplication.util.FileTypeHelper
@@ -77,8 +78,8 @@ fun SharePreviewScreen(
             if (fileIds.isEmpty()) { errorMsg = "分享链接无效或已过期"; isLoading = false; return@withContext }
             val items = fileIds.mapNotNull { id -> app.fileRepository.getFileById(id) }
             if (items.isEmpty()) { errorMsg = "文件不存在"; isLoading = false; return@withContext }
-            rootItems = items.map { file -> buildTree(app, file, 0) }.sortedByDescending { it.file.type == "folder" }
-            items.filter { it.type == "folder" }.forEach { expandedIds[it.fileId] = true }
+            rootItems = items.map { file -> buildTree(app, file, 0) }.sortedByDescending { it.file.type == FileCategory.FOLDER }
+            items.filter { it.type == FileCategory.FOLDER }.forEach { expandedIds[it.fileId] = true }
             isLoading = false
         }
     }
@@ -142,7 +143,7 @@ fun SharePreviewScreen(
 @Composable
 private fun ShareTreeView(item: ShareTreeItem, expandedIds: MutableMap<String, Boolean>) {
     val context = LocalContext.current
-    val isFolder = item.file.type == "folder"
+    val isFolder = item.file.type == FileCategory.FOLDER
     val hasChildren = item.children.isNotEmpty()
     val isExpanded = expandedIds[item.file.fileId] == true
 
@@ -191,7 +192,7 @@ private fun ShareTreeView(item: ShareTreeItem, expandedIds: MutableMap<String, B
                 )
                 Text(
                     buildString {
-                        if (item.file.type != "folder") {
+                        if (item.file.type != FileCategory.FOLDER) {
                             append(FileTypeHelper.formatFileSize(item.file.size))
                             append(" · ")
                         }
@@ -210,11 +211,11 @@ private fun ShareTreeView(item: ShareTreeItem, expandedIds: MutableMap<String, B
 }
 
 private suspend fun buildTree(app: SimplePanApplication, file: FileEntity, depth: Int): ShareTreeItem {
-    val children = if (file.type == "folder") {
+    val children = if (file.type == FileCategory.FOLDER) {
         app.fileRepository.getFilesByParentId(file.fileId)
             .let { flow -> flow.first() }
             .map { child -> buildTree(app, child, depth + 1) }
-            .sortedByDescending { it.file.type == "folder" }
+            .sortedByDescending { it.file.type == FileCategory.FOLDER }
     } else emptyList()
     return ShareTreeItem(file = file, depth = depth, children = children)
 }
