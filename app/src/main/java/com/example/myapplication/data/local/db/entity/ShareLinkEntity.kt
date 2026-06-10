@@ -1,11 +1,10 @@
 package com.example.myapplication.data.local.db.entity
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 
-@Entity(tableName = "share_links")
+@Entity(tableName = "share_links", primaryKeys = ["shareId", "fileId"])
 data class ShareLinkEntity(
-    @PrimaryKey val shareId: String,
+    val shareId: String,
     val fileId: String,
     val createdAt: Long = System.currentTimeMillis()
 )

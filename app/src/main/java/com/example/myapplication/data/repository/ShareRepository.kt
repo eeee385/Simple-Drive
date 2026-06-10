@@ -7,13 +7,15 @@ class ShareRepository(private val fileRepository: FileRepository) {
 
     private val chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-    suspend fun generateShareLink(fileId: String): String {
+    suspend fun generateShareLink(fileIds: List<String>): String {
         val shareId = (1..8).map { chars[Random.nextInt(chars.length)] }.joinToString("")
-        fileRepository.createShareLink(shareId, fileId)
+        for (fileId in fileIds) {
+            fileRepository.createShareLink(shareId, fileId)
+        }
         return "simplepan://share?sid=$shareId"
     }
 
-    suspend fun resolveShareLink(shareId: String): String? {
-        return fileRepository.resolveShareLink(shareId)
+    suspend fun resolveShareLinks(shareId: String): List<String> {
+        return fileRepository.resolveShareLinks(shareId)
     }
 }

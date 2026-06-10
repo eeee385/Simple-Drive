@@ -15,12 +15,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
+
+enum class FilterType { ALL, IMAGE, VIDEO, DOC }
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class FilesViewModel(
@@ -33,10 +36,38 @@ class FilesViewModel(
 
     private val navStack = ArrayDeque<String?>()
 
-    val files: StateFlow<List<FileEntity>> = _currentParentId
+    private val folderNameStack = ArrayDeque<String>()
+    private val _currentFolderName = MutableStateFlow("")
+    val currentFolderName: StateFlow<String> = _currentFolderName.asStateFlow()
+
+    private val rawFiles: StateFlow<List<FileEntity>> = _currentParentId
         .flatMapLatest { parentId -> fileRepository.getFilesByParentId(parentId) }
         .map { list -> list.sortedWith(fileSortComparator) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val allFiles: StateFlow<List<FileEntity>> = fileRepository.getAllFiles()
+        .map { list -> list.sortedWith(fileSortComparator) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _filterType = MutableStateFlow(FilterType.ALL)
+    val filterType: StateFlow<FilterType> = _filterType.asStateFlow()
+
+    val files: StateFlow<List<FileEntity>> = combine(
+        rawFiles, allFiles, _filterType, _currentParentId
+    ) { folderFiles, all, filter, parentId ->
+        val source = if (parentId == null && filter != FilterType.ALL) all else folderFiles
+        when (filter) {
+            FilterType.ALL -> source
+            FilterType.IMAGE -> source.filter { it.type == "image" }
+            FilterType.VIDEO -> source.filter { it.type == "video" }
+            FilterType.DOC -> source.filter { it.type == "txt" }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun setFilter(type: FilterType) {
+        _filterType.value = type
+        clearSelection()
+    }
 
     companion object {
         private val typeOrder = mapOf(
@@ -67,11 +98,21 @@ class FilesViewModel(
     private val _selectedFileIds = MutableStateFlow<Set<String>>(emptySet())
     val selectedFileIds: StateFlow<Set<String>> = _selectedFileIds.asStateFlow()
 
-    val isSelectionMode: StateFlow<Boolean> = _selectedFileIds
-        .map { it.isNotEmpty() }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    private val _isSelectionActive = MutableStateFlow(false)
+    val isSelectionMode: StateFlow<Boolean> = _isSelectionActive.asStateFlow()
+
+    fun enterSelection(fileId: String? = null) {
+        _isSelectionActive.value = true
+        if (fileId != null) {
+            _selectedFileIds.value = setOf(fileId)
+        }
+    }
 
     fun toggleSelection(fileId: String) {
+        if (!_isSelectionActive.value) {
+            enterSelection(fileId)
+            return
+        }
         _selectedFileIds.value = _selectedFileIds.value.let { ids ->
             if (fileId in ids) ids - fileId else ids + fileId
         }
@@ -79,25 +120,39 @@ class FilesViewModel(
 
     fun selectAll() {
         viewModelScope.launch {
-            _selectedFileIds.value = files.value.map { it.fileId }.toSet()
+            val allIds = files.value.map { it.fileId }.toSet()
+            _selectedFileIds.value = if (_selectedFileIds.value == allIds) emptySet() else allIds
         }
     }
 
     fun clearSelection() {
+        _isSelectionActive.value = false
         _selectedFileIds.value = emptySet()
     }
 
-    fun navigateToFolder(parentId: String) {
+    fun navigateToFolder(parentId: String, folderName: String) {
         clearSelection()
         navStack.addLast(_currentParentId.value)
+        folderNameStack.addLast(_currentFolderName.value)
         _currentParentId.value = parentId
+        _currentFolderName.value = folderName
     }
 
     fun navigateBack(): Boolean {
         if (navStack.isEmpty()) return false
         clearSelection()
         _currentParentId.value = navStack.removeLast()
+        _currentFolderName.value = folderNameStack.removeLastOrNull() ?: ""
         return true
+    }
+
+    fun getFolderPath(): List<String> {
+        val path = mutableListOf<String>()
+        path.addAll(folderNameStack.filter { it.isNotEmpty() })
+        if (_currentFolderName.value.isNotEmpty()) {
+            path.add(_currentFolderName.value)
+        }
+        return path
     }
 
     fun deleteSelectedFiles() {
@@ -138,9 +193,9 @@ class FilesViewModel(
         }
     }
 
-    fun moveSelectedFiles(newParentId: String?) {
+    fun moveSelectedFiles(newParentId: String?, fileIds: List<String>? = null) {
         viewModelScope.launch {
-            val ids = _selectedFileIds.value.toList()
+            val ids = fileIds ?: _selectedFileIds.value.toList()
             for (id in ids) {
                 fileRepository.moveFile(id, newParentId)
             }

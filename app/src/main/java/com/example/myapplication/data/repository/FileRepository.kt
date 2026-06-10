@@ -30,6 +30,9 @@ class FileRepository(context: Context) {
     fun getFilesByParentId(parentId: String?): Flow<List<FileEntity>> =
         fileDao.getFilesByParentId(parentId)
 
+    fun getAllFiles(): Flow<List<FileEntity>> =
+        fileDao.getAllFiles()
+
     suspend fun getFileById(fileId: String): FileEntity? =
         fileDao.getFileById(fileId)
 
@@ -90,6 +93,10 @@ class FileRepository(context: Context) {
 
     suspend fun resolveShareLink(shareId: String): String? = withContext(Dispatchers.IO) {
         shareLinkDao.getShareLink(shareId)?.fileId
+    }
+
+    suspend fun resolveShareLinks(shareId: String): List<String> = withContext(Dispatchers.IO) {
+        shareLinkDao.getShareLinks(shareId).map { it.fileId }
     }
 
     // Mock network sync: load JSON from assets, parse, insert into Room

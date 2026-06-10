@@ -13,4 +13,7 @@ interface ShareLinkDao {
 
     @Query("SELECT * FROM share_links WHERE shareId = :shareId")
     suspend fun getShareLink(shareId: String): ShareLinkEntity?
+
+    @Query("SELECT * FROM share_links WHERE shareId = :shareId")
+    suspend fun getShareLinks(shareId: String): List<ShareLinkEntity>
 }

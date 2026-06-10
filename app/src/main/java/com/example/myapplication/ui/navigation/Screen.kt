@@ -1,6 +1,7 @@
 package com.example.myapplication.ui.navigation
 
 sealed class Screen(val route: String) {
+    data object Empty : Screen("empty")
     data object Pan : Screen("pan")
     data object Files : Screen("files")
     data object FileList : Screen("file_list/{parentId}") {

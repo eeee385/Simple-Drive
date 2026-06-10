@@ -2,14 +2,19 @@ package com.example.myapplication.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.myapplication.ui.screens.files.FilesScreen
-import com.example.myapplication.ui.screens.files.FolderPickerScreen
-import com.example.myapplication.ui.screens.pan.PanScreen
 import com.example.myapplication.ui.screens.pan.RecentListScreen
 import com.example.myapplication.ui.screens.pan.SharePreviewScreen
 import com.example.myapplication.ui.screens.reader.ReaderScreen
@@ -21,14 +26,15 @@ fun AppNavigation(
 ) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Pan.route,
-        modifier = modifier
+        startDestination = Screen.Empty.route,
+        modifier = modifier,
+        enterTransition = { fadeIn(tween(0)) },
+        exitTransition = { fadeOut(tween(0)) },
+        popEnterTransition = { fadeIn(tween(0)) },
+        popExitTransition = { fadeOut(tween(0)) }
     ) {
-        composable(Screen.Pan.route) {
-            PanScreen(navController = navController)
-        }
-        composable(Screen.Files.route) {
-            FilesScreen(navController = navController)
+        composable(Screen.Empty.route) {
+            // Placeholder — main tabs are rendered by the pager
         }
         composable(
             route = Screen.FileList.route,
@@ -64,26 +70,6 @@ fun AppNavigation(
                     ).show()
                     navController.popBackStack()
                 }
-            )
-        }
-        composable(
-            route = Screen.FolderPicker.route,
-            arguments = listOf(navArgument("parentId") { type = NavType.StringType; defaultValue = "root" })
-        ) {
-            val moveIds = navController.previousBackStackEntry
-                ?.savedStateHandle
-                ?.get<List<String>>("move_ids") ?: emptyList()
-            FolderPickerScreen(
-                initialParentId = "root",
-                excludedFolderIds = moveIds.toSet(),
-                onFolderSelected = { folderId ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set(
-                        "picker_result",
-                        folderId ?: "root"
-                    )
-                    navController.popBackStack()
-                },
-                onCancel = { navController.popBackStack() }
             )
         }
     }
