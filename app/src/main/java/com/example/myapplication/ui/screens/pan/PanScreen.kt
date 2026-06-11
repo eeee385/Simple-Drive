@@ -137,6 +137,7 @@ fun PanScreen(navController: NavHostController) {
 
 @Composable
 private fun UserInfoCard(userInfo: UserInfo) {
+    val context = LocalContext.current
     val used = userInfo.usedSpace
     val total = userInfo.totalSpace
     val percent = if (total > 0) used.toFloat() / total else 0f
@@ -241,9 +242,15 @@ private fun UserInfoCard(userInfo: UserInfo) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                EntryChip(Icons.Filled.Subscriptions, "我的订阅") { /* TODO */ }
-                EntryChip(Icons.Filled.Share, "我的分享") { /* TODO */ }
-                EntryChip(Icons.Filled.Star, "云收藏文件") { /* TODO */ }
+                EntryChip(Icons.Filled.Subscriptions, "我的订阅") {
+                    android.widget.Toast.makeText(context, "暂不支持该功能", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                EntryChip(Icons.Filled.Share, "我的分享") {
+                    android.widget.Toast.makeText(context, "暂不支持该功能", android.widget.Toast.LENGTH_SHORT).show()
+                }
+                EntryChip(Icons.Filled.Star, "云收藏文件") {
+                    android.widget.Toast.makeText(context, "暂不支持该功能", android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

@@ -192,24 +192,25 @@ fun FilesScreen(
                             horizontalArrangement = Arrangement.SpaceEvenly,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val hasSelection = selectedIds.isNotEmpty()
                             // 重命名 - only when single file selected
                             if (selectedIds.size == 1) {
-                                ActionChip(R.drawable.ic_rename, "重命名") {
+                                ActionChip(R.drawable.ic_rename, "重命名", enabled = true) {
                                     val id = selectedIds.first()
                                     renameTarget = files.find { it.fileId == id }
                                 }
                             }
                             // 移动
-                            ActionChip(R.drawable.ic_move, "移动") {
+                            ActionChip(R.drawable.ic_move, "移动", enabled = hasSelection) {
                                 pendingMoveIds = selectedIds.toList()
                                 showMoveSheet = true
                             }
                             // 删除
-                            ActionChip(R.drawable.ic_delete, "删除") {
+                            ActionChip(R.drawable.ic_delete, "删除", enabled = hasSelection) {
                                 deleteTargets = selectedIds.toList()
                             }
                             // 分享
-                            ActionChip(R.drawable.ic_share, "分享") {
+                            ActionChip(R.drawable.ic_share, "分享", enabled = hasSelection) {
                                 scope.launch {
                                     val ids = selectedIds.toList()
                                     val link = app.shareRepository.generateShareLink(ids)
@@ -485,13 +486,15 @@ fun FilesScreen(
 private fun ActionChip(
     @androidx.annotation.DrawableRes iconRes: Int,
     label: String,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(24.dp))
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .clickable(onClick = onClick)
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
+            .alpha(if (enabled) 1f else 0.4f)
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
