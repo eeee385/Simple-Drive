@@ -19,8 +19,8 @@
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/eeee385/simple_pan.git
-cd simple_pan
+git clone https://github.com/eeee385/Simple-Drive.git
+cd Simple-Drive
 
 # 2. 用 Android Studio 打开项目根目录
 
